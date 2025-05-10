@@ -1,6 +1,6 @@
 # validate-pr-review-action
 
-[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/suzuki-shunsuke/validate-pr-review-action/main/LICENSE) | [Install](INSTALL.md) | [Usage](USAGE.md) | [GitHub Action](https://github.com/suzuki-shunsuke/validate-pr-review-action-action)
+[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/suzuki-shunsuke/validate-pr-review-action/main/LICENSE)
 
 `validate-pr-review-action` is a GitHub Action to validate pull request reviews.
 It makes GitHub Actions secure.
