@@ -242,25 +242,25 @@ const validateCommitter = (
     return input.trustedApps.has(user.login)
       ? undefined
       : {
+          sha: commit.oid,
+          committer: {
+            login: user.login,
+            untrusted: true,
+            message: "untrusted app",
+          },
+          message: "the committer is an untrusted app",
+        };
+  }
+  return input.untrustedMachineUsers.has(user.login)
+    ? {
         sha: commit.oid,
         committer: {
           login: user.login,
           untrusted: true,
-          message: "untrusted app",
+          message: "untrusted machine user",
         },
-        message: "the committer is an untrusted app",
-      };
-  }
-  return input.untrustedMachineUsers.has(user.login)
-    ? {
-      sha: commit.oid,
-      committer: {
-        login: user.login,
-        untrusted: true,
-        message: "untrusted machine user",
-      },
-      message: "the committer is an untrusted machine user",
-    }
+        message: "the committer is an untrusted machine user",
+      }
     : undefined;
 };
 
