@@ -274,7 +274,7 @@ const excludeOldReviews = (
   reviews: type.Review[],
   headRefOid: string,
 ): type.Review[] =>
-  reviews.filter((review) => review.commit.oid !== headRefOid);
+  reviews.filter((review) => review.commit.oid === headRefOid);
 
 // checkIfUserRequiresTwoApprovals checks if the user requires two approvals.
 // It returns true if the user is an untrusted app or machine user.
