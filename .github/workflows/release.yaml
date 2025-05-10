@@ -1,0 +1,35 @@
+---
+name: Release
+run-name: Release ${{inputs.tag}}
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "tag"
+        required: true
+      pr:
+        description: "pr number (pre-release)"
+        required: false
+jobs:
+  release:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - run: gh pr checkout "$PR"
+        if: inputs.pr != ''
+        env:
+          GITHUB_TOKEN: ${{github.token}}
+          PR: ${{inputs.pr}}
+      - run: npm ci
+      - run: npm run build
+
+      - uses: suzuki-shunsuke/release-js-action@8a88dffbd0aa8fc1d301d3d5773f99efd181410b # v0.1.5
+        with:
+          version: ${{inputs.tag}}
+          pr: ${{inputs.pr}}
