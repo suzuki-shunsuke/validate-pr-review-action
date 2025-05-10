@@ -12,7 +12,7 @@
     "zod": "^3.24.4"
   },
   "devDependencies": {
-    "@types/node": "20.17.28",
+    "@types/node": "20.17.46",
     "@vercel/ncc": "0.38.3",
     "prettier": "3.5.3",
     "typescript": "5.8.3"
