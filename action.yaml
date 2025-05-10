@@ -42,7 +42,7 @@ inputs:
     default: ${{ github.event.number }}
   # post_comment:
   #   description: |
-  #     Whehter to post a comment on the pull request.
+  #     Whether to post a comment on the pull request.
   #   required: false
   #   default: "false"
 runs:
