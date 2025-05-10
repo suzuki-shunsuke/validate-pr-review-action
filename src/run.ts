@@ -95,7 +95,7 @@ type User = {
   message?: string;
 };
 
-const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
+export const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
   const untrustedCommits = analyzeCommits(pr, input);
   const approvals = analyzeReviews(pr, input, untrustedCommits.committers);
   const author = {
@@ -182,7 +182,7 @@ const analyzeCommits = (pr: type.PullRequest, input: lib.Input): Commits => {
   return commits;
 };
 
-const analyzeReviews = (
+export const analyzeReviews = (
   pr: type.PullRequest,
   input: lib.Input,
   committers: Set<string>,
@@ -242,25 +242,25 @@ const validateCommitter = (
     return input.trustedApps.has(user.login)
       ? undefined
       : {
-          sha: commit.oid,
-          committer: {
-            login: user.login,
-            untrusted: true,
-            message: "untrusted app",
-          },
-          message: "the committer is an untrusted app",
-        };
-  }
-  return input.untrustedMachineUsers.has(user.login)
-    ? {
         sha: commit.oid,
         committer: {
           login: user.login,
           untrusted: true,
-          message: "untrusted machine user",
+          message: "untrusted app",
         },
-        message: "the committer is an untrusted machine user",
-      }
+        message: "the committer is an untrusted app",
+      };
+  }
+  return input.untrustedMachineUsers.has(user.login)
+    ? {
+      sha: commit.oid,
+      committer: {
+        login: user.login,
+        untrusted: true,
+        message: "untrusted machine user",
+      },
+      message: "the committer is an untrusted machine user",
+    }
     : undefined;
 };
 
