@@ -1,6 +1,6 @@
 # validate-pr-review-action
 
-[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/suzuki-shunsuke/validate-pr-review-action/main/LICENSE)
+[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/suzuki-shunsuke/validate-pr-review-action/main/LICENSE) | [Troubleshooting](docs/trouble-shooting.md)
 
 `validate-pr-review-action` is a GitHub Action to validate pull request reviews.
 It makes GitHub Actions secure.
@@ -53,14 +53,14 @@ with:
   trusted_apps: |
     renovate[bot]
     dependabot[bot]
-  machine_users: |
+  untrusted_machine_users: |
     suzuki-shunsuke-bot
     suzuki-shunsuke-2-bot
 ```
 
 You should use `trusted_apps` carefully.
 You shouldn't specify GitHub Apps not managing securely.
-You should set all Machine Users to `machine_users` except for Machine Users managing securely.
+You should set all Machine Users to `untrusted_machine_users` except for Machine Users managing securely.
 
 Whether a GitHub App is considered trusted or a user is considered an untrusted machine user depends on how securely they are managed and whether they are susceptible to misuse.
 
