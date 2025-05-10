@@ -8,7 +8,9 @@ export const main = async () => {
   run({
     githubToken: core.getInput("github_token"),
     trustedApps: new Set(core.getMultilineInput("trusted_apps")),
-    untrustedMachineUsers: new Set(core.getMultilineInput("untrusted_machine_users")),
+    untrustedMachineUsers: new Set(
+      core.getMultilineInput("untrusted_machine_users"),
+    ),
     repositoryOwner: core.getInput("repository_owner"),
     repositoryName: core.getInput("repository_name"),
     pullRequestNumber: parseInt(core.getInput("pull_request_number"), 10),
@@ -23,7 +25,9 @@ const getPullRequest = async (input: lib.Input): Promise<type.PullRequest> => {
   return pr;
 };
 
-const listCommits = async (input: lib.Input): Promise<type.PullRequestCommit[]> => {
+const listCommits = async (
+  input: lib.Input,
+): Promise<type.PullRequestCommit[]> => {
   const result = await github.listCommits(input);
   const pr = type.PullRequest.parse(result);
   return pr.repository.pullRequest.commits.nodes;
@@ -45,8 +49,12 @@ const run = async (input: lib.Input) => {
     pr.repository.pullRequest.reviews.nodes = await listReviews(input);
   }
   const reviews = ignoreUntrustedReviews(
-    filterReviews(pr.repository.pullRequest.reviews.nodes, pr.repository.pullRequest.headRefOid),
-    input.untrustedMachineUsers);
+    filterReviews(
+      pr.repository.pullRequest.reviews.nodes,
+      pr.repository.pullRequest.headRefOid,
+    ),
+    input.untrustedMachineUsers,
+  );
   if (reviews.length > 1) {
     // Allow multiple approvals
     return;
@@ -69,17 +77,23 @@ const run = async (input: lib.Input) => {
   validate(reviews, committers, requiredTwoApprovals);
 };
 
-const ignoreUntrustedReviews = (reviews: type.Review[], untrustedUsers: Set<string>): type.Review[] => {
+const ignoreUntrustedReviews = (
+  reviews: type.Review[],
+  untrustedUsers: Set<string>,
+): type.Review[] => {
   // Ignore approvals from untrusted users
-  return reviews.filter(review => !untrustedUsers.has(review.author.login));
+  return reviews.filter((review) => !untrustedUsers.has(review.author.login));
 };
 
 const isApp = (user: type.User): boolean => {
   return user.resourcePath.startsWith("/apps/") || user.login.endsWith("[bot]");
 };
 
-const filterReviews = (reviews: type.Review[], headRefOid: string): type.Review[] => {
-  return reviews.filter(review => {
+const filterReviews = (
+  reviews: type.Review[],
+  headRefOid: string,
+): type.Review[] => {
+  return reviews.filter((review) => {
     if (review.state !== "APPROVED" || review.commit.oid !== headRefOid) {
       // Ignore reviews other than APPROVED
       // Ignore reviews for non head commits
@@ -95,7 +109,10 @@ const filterReviews = (reviews: type.Review[], headRefOid: string): type.Review[
 
 // checkIfUserRequiresTwoApprovals checks if the user requires two approvals.
 // It returns true if the user is an untrusted app or machine user.
-const checkIfUserRequiresTwoApprovals = (user: type.User, input: lib.Input): boolean => {
+const checkIfUserRequiresTwoApprovals = (
+  user: type.User,
+  input: lib.Input,
+): boolean => {
   if (user.login === "") {
     // If the user is not linked to any GitHub user, require two approvals
     return true;
@@ -108,8 +125,13 @@ const checkIfUserRequiresTwoApprovals = (user: type.User, input: lib.Input): boo
   return input.untrustedMachineUsers.has(user.login);
 };
 
-const checkIfTwoApprovalsRequired = (pr: type.PullRequest, input: lib.Input): boolean => {
-  if (checkIfUserRequiresTwoApprovals(pr.repository.pullRequest.author, input)) {
+const checkIfTwoApprovalsRequired = (
+  pr: type.PullRequest,
+  input: lib.Input,
+): boolean => {
+  if (
+    checkIfUserRequiresTwoApprovals(pr.repository.pullRequest.author, input)
+  ) {
     return true;
   }
   // If the pull request has commits from untrusted apps or machine users, require two approvals
@@ -138,7 +160,11 @@ const getCommitters = (commits: type.PullRequestCommit[]): Set<string> => {
   return committers;
 };
 
-const validate = (reviews: type.Review[], committers: Set<string>, requiredTwoApprovals: boolean) => {
+const validate = (
+  reviews: type.Review[],
+  committers: Set<string>,
+  requiredTwoApprovals: boolean,
+) => {
   let oneApproval = false;
   for (const review of reviews) {
     // TODO check CODEOWNERS

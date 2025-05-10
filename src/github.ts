@@ -105,7 +105,6 @@ export const listCommits = async (input: lib.Input): Promise<any> => {
   );
 };
 
-
 export const listReviews = async (input: lib.Input): Promise<any> => {
   const MyOctokit = Octokit.plugin(paginateGraphQL);
   const octokit = new MyOctokit({ auth: input.githubToken });
