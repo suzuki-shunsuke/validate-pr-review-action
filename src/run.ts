@@ -110,10 +110,10 @@ const filterReviews = (
 // checkIfUserRequiresTwoApprovals checks if the user requires two approvals.
 // It returns true if the user is an untrusted app or machine user.
 const checkIfUserRequiresTwoApprovals = (
-  user: type.User,
+  user: type.User | null,
   input: lib.Input,
 ): boolean => {
-  if (user.login === "") {
+  if (user === null || user.login === "") {
     // If the user is not linked to any GitHub user, require two approvals
     return true;
   }
@@ -144,7 +144,7 @@ const checkIfTwoApprovalsRequired = (
   return false;
 };
 
-const getUserFromCommit = (commit: type.Commit): type.User => {
+const getUserFromCommit = (commit: type.Commit): type.User | null => {
   return commit.committer.user ?? commit.author.user;
 };
 
@@ -152,7 +152,7 @@ const getCommitters = (commits: type.PullRequestCommit[]): Set<string> => {
   const committers = new Set<string>();
   for (const commit of commits) {
     const user = getUserFromCommit(commit.commit);
-    if (user.login === "") {
+    if (user === null || user.login === "") {
       continue;
     }
     committers.add(user.login);
