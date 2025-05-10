@@ -39,13 +39,15 @@ const listReviews = async (input: lib.Input): Promise<type.Review[]> => {
 };
 
 const run = async (input: lib.Input) => {
-  core.info(JSON.stringify({
-    trustedApps: [...input.trustedApps],
-    untrustedMachineUsers: [...input.untrustedMachineUsers],
-    repositoryOwner: input.repositoryOwner,
-    repositoryName: input.repositoryName,
-    pullRequestNumber: input.pullRequestNumber,
-  }));
+  core.info(
+    JSON.stringify({
+      trustedApps: [...input.trustedApps],
+      untrustedMachineUsers: [...input.untrustedMachineUsers],
+      repositoryOwner: input.repositoryOwner,
+      repositoryName: input.repositoryName,
+      pullRequestNumber: input.pullRequestNumber,
+    }),
+  );
   // Get a pull request reviews and committers via GraphQL API
   const pr = await getPullRequest(input);
   if (pr.repository.pullRequest.commits.pageInfo.hasNextPage) {
@@ -96,7 +98,10 @@ const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
   const untrustedCommits = analyzeCommits(pr, input);
   const author = {
     login: pr.repository.pullRequest.author.login,
-    untrusted: checkIfUserRequiresTwoApprovals(pr.repository.pullRequest.author, input),
+    untrusted: checkIfUserRequiresTwoApprovals(
+      pr.repository.pullRequest.author,
+      input,
+    ),
   };
 
   const result: Result = {
@@ -107,7 +112,7 @@ const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
     twoApprovalsAreRequired: untrustedCommits.length > 0 || author.untrusted,
     author: author,
     valid: true,
-  }
+  };
 
   if (approvals.trusted.length === 0) {
     result.valid = false;
@@ -126,7 +131,11 @@ type Approvals = {
   ignored: Approval[];
 };
 
-const analyzeCommit = (pr: type.PullRequest, input: lib.Input, commit: type.Commit): Commit | undefined => {
+const analyzeCommit = (
+  pr: type.PullRequest,
+  input: lib.Input,
+  commit: type.Commit,
+): Commit | undefined => {
   if (commit.committer.user === null || commit.committer.user.login === "") {
     if (commit.author.user === null || commit.author.user.login === "") {
       return {
@@ -155,15 +164,19 @@ const analyzeReviews = (pr: type.PullRequest, input: lib.Input): Approvals => {
     trusted: [],
     ignored: [],
   };
-  for (const review of extractApproved(excludeOldReviews(pr.repository.pullRequest.reviews.nodes, pr.repository.pullRequest.headRefOid))) {
+  for (const review of extractApproved(
+    excludeOldReviews(
+      pr.repository.pullRequest.reviews.nodes,
+      pr.repository.pullRequest.headRefOid,
+    ),
+  )) {
     if (isApp(review.author)) {
-      approvals.ignored.push(
-        {
-          user: {
-            login: review.author.login,
-          },
-          message: "approval from app is ignored",
-        });
+      approvals.ignored.push({
+        user: {
+          login: review.author.login,
+        },
+        message: "approval from app is ignored",
+      });
       continue;
     }
     if (input.untrustedMachineUsers.has(review.author.login)) {
@@ -184,39 +197,48 @@ const analyzeReviews = (pr: type.PullRequest, input: lib.Input): Approvals => {
   return approvals;
 };
 
-const validateCommitter = (commit: type.Commit, user: type.User, input: lib.Input): Commit | undefined => {
+const validateCommitter = (
+  commit: type.Commit,
+  user: type.User,
+  input: lib.Input,
+): Commit | undefined => {
   if (isApp(user)) {
-    return input.trustedApps.add(user.login) ? undefined : {
-      sha: commit.oid,
-      committer: {
-        login: user.login,
-        untrusted: true,
-        message: "untrusted app",
-      },
-      message: "the committer is an untrusted app",
-    };
+    return input.trustedApps.add(user.login)
+      ? undefined
+      : {
+          sha: commit.oid,
+          committer: {
+            login: user.login,
+            untrusted: true,
+            message: "untrusted app",
+          },
+          message: "the committer is an untrusted app",
+        };
   }
-  return input.untrustedMachineUsers.has(user.login) ? {
-    sha: commit.oid,
-    committer: {
-      login: user.login,
-      untrusted: true,
-      message: "untrusted machine user",
-    },
-    message: "the committer is an untrusted machine user",
-  } : undefined;
+  return input.untrustedMachineUsers.has(user.login)
+    ? {
+        sha: commit.oid,
+        committer: {
+          login: user.login,
+          untrusted: true,
+          message: "untrusted machine user",
+        },
+        message: "the committer is an untrusted machine user",
+      }
+    : undefined;
 };
 
-const isApp = (user: type.User): boolean => user.resourcePath.startsWith("/apps/") || user.login.endsWith("[bot]");
+const isApp = (user: type.User): boolean =>
+  user.resourcePath.startsWith("/apps/") || user.login.endsWith("[bot]");
 
-const extractApproved = (
-  reviews: type.Review[],
-): type.Review[] => reviews.filter(review => review.state === "APPROVED");
+const extractApproved = (reviews: type.Review[]): type.Review[] =>
+  reviews.filter((review) => review.state === "APPROVED");
 
 const excludeOldReviews = (
   reviews: type.Review[],
   headRefOid: string,
-): type.Review[] => reviews.filter(review => review.commit.oid !== headRefOid);
+): type.Review[] =>
+  reviews.filter((review) => review.commit.oid !== headRefOid);
 
 // checkIfUserRequiresTwoApprovals checks if the user requires two approvals.
 // It returns true if the user is an untrusted app or machine user.
