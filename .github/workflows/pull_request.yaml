@@ -1,0 +1,20 @@
+name: pull request
+on: pull_request
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    uses: ./.github/workflows/workflow_call_test.yaml
+    permissions:
+      contents: write
+      pull-requests: write
+  status-check:
+    runs-on: ubuntu-24.04
+    if: failure()
+    timeout-minutes: 10
+    permissions: {}
+    needs:
+      - test
+    steps:
+      - run: exit 1

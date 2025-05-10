@@ -1,0 +1,57 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/suzuki-shunsuke/cmdx/v1.7.7/json-schema/cmdx.json
+# cmdx - task runner
+# https://github.com/suzuki-shunsuke/cmdx
+tasks:
+  - name: release
+    short: r
+    description: release the new version
+    usage: release the new version
+    script: |
+      rjsa "$VERSION" "$PR"
+    environment:
+      GITHUB_SERVER_URL: https://github.com
+    args:
+      - name: version
+        required: true
+        validate:
+          - regexp: "^v\\d+\\.\\d+.\\d+(-\\d+)?$"
+        script_envs:
+          - version
+      - name: pr
+        required: false
+        validate:
+          - regexp: "^\\d+$"
+        script_envs:
+          - pr
+    flags:
+      - name: ref
+        required: false
+        script_envs:
+          - REF
+  - name: build
+    description: build TypeScript
+    usage: build TypeScript
+    script: |
+      set -eu
+      npm i
+      npm run build
+  - name: update
+    short: u
+    description: Update
+    usage: Update
+    script: |
+      set -eu
+      npm i
+      npm update
+      npm run build
+  - name: fmt
+    description: Format with prettier
+    usage: Format with prettier
+    shell:
+      - bash
+      - -c
+    script: |
+      set -euo pipefail
+      npm run fmt
+      git ls-files | xargs nllint -f -s
