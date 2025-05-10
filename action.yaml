@@ -2,8 +2,8 @@ name: Validate PR Reviews
 description: Validate PR Reviews
 author: Shunsuke Suzuki
 branding:
-  icon: lock
-  color: green
+  icon: shield
+  color: purple
 inputs:
   # Optional
   trusted_apps:
