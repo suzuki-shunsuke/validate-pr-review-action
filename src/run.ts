@@ -96,8 +96,8 @@ type User = {
 };
 
 const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
-  const approvals = analyzeReviews(pr, input);
   const untrustedCommits = analyzeCommits(pr, input);
+  const approvals = analyzeReviews(pr, input, untrustedCommits.committers);
   const author = {
     login: pr.repository.pullRequest.author.login,
     untrusted: checkIfUserRequiresTwoApprovals(
@@ -110,8 +110,9 @@ const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
     headSHA: pr.repository.pullRequest.headRefOid,
     trustedApprovals: approvals.trusted,
     ignoredApprovals: approvals.ignored,
-    untrustedCommits: untrustedCommits,
-    twoApprovalsAreRequired: untrustedCommits.length > 0 || author.untrusted,
+    untrustedCommits: untrustedCommits.untrusted,
+    twoApprovalsAreRequired:
+      untrustedCommits.untrusted.length > 0 || author.untrusted,
     author: author,
     valid: true,
   };
@@ -137,31 +138,55 @@ const analyzeCommit = (
   pr: type.PullRequest,
   input: lib.Input,
   commit: type.Commit,
+  committer: type.User | undefined,
 ): Commit | undefined => {
+  if (committer === undefined) {
+    return {
+      sha: commit.oid,
+      message: "a commit isn't linked to any GitHub user",
+    };
+  }
+  return validateCommitter(commit, committer, input);
+};
+
+const getCommitter = (commit: type.Commit): type.User | undefined => {
   if (commit.committer.user === null || commit.committer.user.login === "") {
     if (commit.author.user === null || commit.author.user.login === "") {
-      return {
-        sha: commit.oid,
-        message: "a commit isn't linked to any GitHub user",
-      };
+      return undefined;
     }
-    return validateCommitter(commit, commit.author.user, input);
+    return commit.author.user;
   }
-  return validateCommitter(commit, commit.committer.user, input);
+  return commit.committer.user;
 };
 
-const analyzeCommits = (pr: type.PullRequest, input: lib.Input): Commit[] => {
-  const untrustedCommits: Commit[] = [];
+type Commits = {
+  untrusted: Commit[];
+  committers: Set<string>;
+};
+
+const analyzeCommits = (pr: type.PullRequest, input: lib.Input): Commits => {
+  const commits: Commits = {
+    untrusted: [],
+    committers: new Set(),
+  };
   for (const commit of pr.repository.pullRequest.commits.nodes) {
-    const result = analyzeCommit(pr, input, commit.commit);
+    const committer = getCommitter(commit.commit);
+    if (committer !== undefined) {
+      commits.committers.add(committer.login);
+    }
+    const result = analyzeCommit(pr, input, commit.commit, committer);
     if (result !== undefined) {
-      untrustedCommits.push(result);
+      commits.untrusted.push(result);
     }
   }
-  return untrustedCommits;
+  return commits;
 };
 
-const analyzeReviews = (pr: type.PullRequest, input: lib.Input): Approvals => {
+const analyzeReviews = (
+  pr: type.PullRequest,
+  input: lib.Input,
+  committers: Set<string>,
+): Approvals => {
   const approvals: Approvals = {
     trusted: [],
     ignored: [],
@@ -187,6 +212,15 @@ const analyzeReviews = (pr: type.PullRequest, input: lib.Input): Approvals => {
           login: review.author.login,
         },
         message: "approval from untrusted machine user is ignored",
+      });
+      continue;
+    }
+    if (committers.has(review.author.login)) {
+      approvals.ignored.push({
+        user: {
+          login: review.author.login,
+        },
+        message: "approval from committer is ignored",
       });
       continue;
     }
