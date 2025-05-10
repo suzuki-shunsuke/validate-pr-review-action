@@ -7,7 +7,9 @@ import { z } from "zod";
 export const main = async () => {
   run({
     githubToken: core.getInput("github_token"),
-    trustedApps: new Set<string>(core.getMultilineInput("trusted_apps")),
+    trustedApps: new Set<string>(
+      core.getMultilineInput("trusted_apps").map(appLogin),
+    ),
     untrustedMachineUsers: new Set<string>(
       core.getMultilineInput("untrusted_machine_users"),
     ),
@@ -203,7 +205,7 @@ const validateCommitter = (
   input: lib.Input,
 ): Commit | undefined => {
   if (isApp(user)) {
-    return input.trustedApps.add(user.login)
+    return input.trustedApps.has(user.login)
       ? undefined
       : {
           sha: commit.oid,
@@ -252,8 +254,11 @@ const checkIfUserRequiresTwoApprovals = (
   }
   if (isApp(user)) {
     // Require two approvals for PRs created by trusted apps, excluding trusted apps
-    return !input.trustedApps.has(user.login);
+    return !input.trustedApps.has(appLogin(user.login));
   }
   // Require two approvals for PRs created by untrusted machine users
   return input.untrustedMachineUsers.has(user.login);
 };
+
+const appLogin = (login: string): string =>
+  login.endsWith("[bot]") ? login : login + "[bot]";
