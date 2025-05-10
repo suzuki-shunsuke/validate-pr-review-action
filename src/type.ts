@@ -17,10 +17,10 @@ export type Review = z.infer<typeof Review>;
 
 const Commit = z.object({
   committer: z.object({
-    user: User,
+    user: z.nullable(User),
   }),
   author: z.object({
-    user: User,
+    user: z.nullable(User),
   }),
 });
 export type Commit = z.infer<typeof Commit>;
