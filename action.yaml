@@ -14,6 +14,17 @@ inputs:
     default: |
       renovate
       dependabot
+  trusted_machine_users:
+    description: |
+      Logins of Trusted machine users.
+      If a user matches with both `trusted_machine_users` and `untrusted_machine_users`, it is considered trusted.
+      trusted_machine_users is useful to exclude specific machine users from regular expressions of untrusted_machine_users.
+      e.g. Users with the suffix "-bot" are untrusted, but "suzuki-shunsuke-bot" is trusted.
+      trusted_machine_users: |
+        suzuki-shunsuke-bot
+      untrusted_machine_users: |
+        /-bot$/
+    required: false
   untrusted_machine_users:
     description: |
       Logins of untrusted Machine Users.

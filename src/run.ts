@@ -28,6 +28,9 @@ export const main = async () => {
   run({
     githubToken: core.getInput("github_token"),
     trustedApps: trustedApps,
+    trustedMachineUsers: new Set(
+      core.getMultilineInput("trusted_machine_users"),
+    ),
     untrustedMachineUsers: untrustedMachineUsers,
     untrustedMachineUserRegexps: untrustedMachineUserRegexps,
     repositoryOwner: core.getInput("repository_owner"),
@@ -212,6 +215,9 @@ const matchUntrustedMachineUser = (
   login: string,
   input: lib.Input,
 ): boolean => {
+  if (input.trustedMachineUsers.has(login)) {
+    return false;
+  }
   if (input.untrustedMachineUsers.has(login)) {
     return true;
   }

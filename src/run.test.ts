@@ -27,6 +27,7 @@ const pageInfo = {
 const getInput = (
   trustedApps: string[],
   untrustedMachineUsers: string[],
+  trustedMachineUsers: string[] = [],
   untrustedMachineUserRegexps: string[] = [],
 ): lib.Input => ({
   githubToken: "",
@@ -34,6 +35,7 @@ const getInput = (
   repositoryName: "validate-pr-review-action",
   pullRequestNumber: 1,
   trustedApps: new Set(trustedApps),
+  trustedMachineUsers: new Set(trustedMachineUsers),
   untrustedMachineUsers: new Set(untrustedMachineUsers),
   untrustedMachineUserRegexps: untrustedMachineUserRegexps.map(
     (r) => new RegExp(r),
@@ -252,7 +254,7 @@ test("analyze - pr author is an untrusted machine user (regexp)", () => {
           },
         },
       },
-      getInput(["/apps/renovate", "/apps/dependabot"], [], ["-bot$"]),
+      getInput(["/apps/renovate", "/apps/dependabot"], [], [], ["-bot$"]),
     ),
   ).toStrictEqual({
     headSHA: latestSHA,
@@ -266,6 +268,35 @@ test("analyze - pr author is an untrusted machine user (regexp)", () => {
     twoApprovalsAreRequired: true,
     valid: false,
     message: "At least two approvals are required",
+  });
+});
+
+test("analyze - trusted_machine_users", () => {
+  expect(
+    run.analyze(
+      {
+        repository: {
+          pullRequest: {
+            headRefOid: latestSHA,
+            author: suzukiBot, // untrusted machine user
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([latestApprovalFromSuzuki]),
+          },
+        },
+      },
+      getInput(["/apps/renovate", "/apps/dependabot"], [], ["suzuki-shunsuke-bot"], ["-bot$"]),
+    ),
+  ).toStrictEqual({
+    headSHA: latestSHA,
+    author: {
+      login: "suzuki-shunsuke-bot",
+      untrusted: false,
+    },
+    trustedApprovals: [trustedApprovalFromSuzuki],
+    ignoredApprovals: [],
+    untrustedCommits: [],
+    twoApprovalsAreRequired: false,
+    valid: true,
   });
 });
 

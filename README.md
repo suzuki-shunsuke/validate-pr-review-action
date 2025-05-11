@@ -69,11 +69,13 @@ This action doesn't verify commit signing because you can do it using Branch Rul
 
 ## Trusted Apps and untrusted users
 
-You can specify lists of trusted GitHub Apps and untrusted machine users.
+You can specify lists of trusted GitHub Apps, trusted machine users, and untrusted machine users.
 
 ```yaml
 uses: suzuki-shunsuke/validate-pr-review-action@latest
 with:
+  # trusted_apps and trusted_machine_users don't support regular expressions.
+  # You must specify trusted apps and machine users explicitly.
   trusted_apps: |
     renovate
     dependabot
@@ -82,6 +84,11 @@ with:
   untrusted_machine_users: |
     mini-core
     /-bot$/
+  # trusted_machine_users is a list of trusted apps.
+  # If a user matches with both `trusted_machine_users` and `untrusted_machine_users`, it is considered trusted.
+  # trusted_machine_users is useful to exclude specific machine users from regular expressions of untrusted_machine_users.
+  trusted_machine_users: |
+    suzuki-shunsuke-bot
 ```
 
 You should use `trusted_apps` carefully.
