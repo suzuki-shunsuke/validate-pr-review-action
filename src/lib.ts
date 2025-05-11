@@ -7,6 +7,7 @@ export type Input = {
   repositoryName: string;
   pullRequestNumber: number;
   trustedApps: Set<string>;
+  trustedMachineUsers: Set<string>;
   untrustedMachineUsers: Set<string>;
   untrustedMachineUserRegexps: RegExp[];
   // postComment: boolean;
