@@ -252,7 +252,7 @@ test("analyze - pr author is an untrusted machine user (regexp)", () => {
           },
         },
       },
-      getInput(["/apps/renovate", "/apps/dependabot"], [], ["-bot"]),
+      getInput(["/apps/renovate", "/apps/dependabot"], [], ["-bot$"]),
     ),
   ).toStrictEqual({
     headSHA: latestSHA,
