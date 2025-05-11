@@ -77,9 +77,11 @@ with:
   trusted_apps: |
     renovate
     dependabot
+  # untrusted_machine_users supports regular expressions too.
+  # Enclose a regular expression between slashes like `/-bot$/`.
   untrusted_machine_users: |
-    suzuki-shunsuke-bot
-    suzuki-shunsuke-2-bot
+    mini-core
+    /-bot$/
 ```
 
 You should use `trusted_apps` carefully.

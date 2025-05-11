@@ -18,9 +18,10 @@ inputs:
     description: |
       Logins of untrusted Machine Users.
       regular expressions are also available.
+      Enclose a regular expression between slashes like `/-bot$/`.
       e.g.
       untrusted_machine_users: |
-        suzuki-shunsuke-bot-2
+        mini-core
         /-bot$/
     required: false
   github_token:
