@@ -1,5 +1,66 @@
 import { expect, test } from "vitest";
 import * as run from "./run";
+import * as lib from "./lib";
+import { get } from "http";
+
+const latestSHA = "1234567890abcdef1234567890abcdef12345678";
+const oldSHA = "0000000000000000000000000000000000000000";
+const octocat = {
+  login: "octocat",
+  resourcePath: "/octocat",
+};
+const suzuki = {
+  login: "suzuki-shunsuke",
+  resourcePath: "/suzuki-shunsuke",
+};
+const renovate = {
+  login: "renovate",
+  resourcePath: "/apps/renovate",
+};
+const suzukiBot = {
+  login: "suzuki-shunsuke-bot",
+  resourcePath: "/suzuki-shunsuke-bot",
+};
+const untrustedApp = {
+  login: "suzuki-shunsuke-app",
+  resourcePath: "/apps/suzuki-shunsuke-app",
+};
+const pageInfo = {
+  hasNextPage: false,
+  endCursor: "",
+};
+
+const getInput = (
+  trustedApps: string[],
+  untrustedMachineUsers: string[],
+): lib.Input => ({
+  githubToken: "",
+  repositoryOwner: "suzuki-shunsuke",
+  repositoryName: "validate-pr-review-action",
+  pullRequestNumber: 1,
+  trustedApps: new Set(trustedApps),
+  untrustedMachineUsers: new Set(untrustedMachineUsers),
+});
+
+const octocatLatestCommit = {
+  oid: latestSHA,
+  committer: {
+    user: octocat,
+  },
+  author: {
+    user: octocat,
+  },
+};
+
+const suzukiLatestCommit = {
+  oid: latestSHA,
+  committer: {
+    user: suzuki,
+  },
+  author: {
+    user: suzuki,
+  },
+};
 
 test("analyze - normal", () => {
   expect(
@@ -7,34 +68,14 @@ test("analyze - normal", () => {
       {
         repository: {
           pullRequest: {
-            headRefOid: "1234567890abcdef1234567890abcdef12345678",
-            author: {
-              login: "octocat",
-              resourcePath: "/octocat",
-            },
+            headRefOid: latestSHA,
+            author: octocat,
             commits: {
               totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
-                  commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
-                    committer: {
-                      user: {
-                        login: "octocat",
-                        resourcePath: "/octocat",
-                      },
-                    },
-                    author: {
-                      user: {
-                        login: "octocat",
-                        resourcePath: "/octocat",
-                      },
-                    },
-                  },
+                  commit: octocatLatestCommit,
                 },
               ],
             },
@@ -48,29 +89,19 @@ test("analyze - normal", () => {
                 {
                   state: "APPROVED",
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                   },
-                  author: {
-                    login: "suzuki-shunsuke",
-                    resourcePath: "/suzuki-shunsuke",
-                  },
+                  author: suzuki,
                 },
               ],
             },
           },
         },
       },
-      {
-        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
-        untrustedMachineUsers: new Set(),
-        githubToken: "",
-        repositoryOwner: "suzuki-shunsuke",
-        repositoryName: "validate-pr-review-action",
-        pullRequestNumber: 1,
-      },
+      getInput(["/apps/renovate", "/apps/dependabot"], []),
     ),
   ).toStrictEqual({
-    headSHA: "1234567890abcdef1234567890abcdef12345678",
+    headSHA: latestSHA,
     author: {
       login: "octocat",
       untrusted: false,
@@ -95,29 +126,20 @@ test("analyze - pr author is a trusted app", () => {
       {
         repository: {
           pullRequest: {
-            headRefOid: "1234567890abcdef1234567890abcdef12345678",
-            author: {
-              login: "renovate", // trusted app
-              resourcePath: "/apps/renovate",
-            },
+            headRefOid: latestSHA,
+            author: renovate, // trusted app
             commits: {
               totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                     committer: {
                       user: null,
                     },
                     author: {
-                      user: {
-                        login: "renovate",
-                        resourcePath: "/apps/renovate",
-                      },
+                      user: renovate,
                     },
                   },
                 },
@@ -133,29 +155,19 @@ test("analyze - pr author is a trusted app", () => {
                 {
                   state: "APPROVED",
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                   },
-                  author: {
-                    login: "suzuki-shunsuke",
-                    resourcePath: "/suzuki-shunsuke",
-                  },
+                  author: suzuki,
                 },
               ],
             },
           },
         },
       },
-      {
-        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
-        untrustedMachineUsers: new Set(),
-        githubToken: "",
-        repositoryOwner: "suzuki-shunsuke",
-        repositoryName: "validate-pr-review-action",
-        pullRequestNumber: 1,
-      },
+      getInput(["/apps/renovate", "/apps/dependabot"], []),
     ),
   ).toStrictEqual({
-    headSHA: "1234567890abcdef1234567890abcdef12345678",
+    headSHA: latestSHA,
     author: {
       login: "renovate",
       untrusted: false,
@@ -180,29 +192,20 @@ test("analyze - pr author is an untrusted machine user", () => {
       {
         repository: {
           pullRequest: {
-            headRefOid: "1234567890abcdef1234567890abcdef12345678",
-            author: {
-              login: "suzuki-shunsuke-bot", // untrusted machine user
-              resourcePath: "/suzuki-shunsuke-bot",
-            },
+            headRefOid: latestSHA,
+            author: suzukiBot, // untrusted machine user
             commits: {
               totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                     committer: {
                       user: null,
                     },
                     author: {
-                      user: {
-                        login: "suzuki-shunsuke-2",
-                        resourcePath: "/suzuki-shunsuke-2",
-                      },
+                      user: octocat,
                     },
                   },
                 },
@@ -218,29 +221,19 @@ test("analyze - pr author is an untrusted machine user", () => {
                 {
                   state: "APPROVED",
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                   },
-                  author: {
-                    login: "suzuki-shunsuke",
-                    resourcePath: "/suzuki-shunsuke",
-                  },
+                  author: suzuki,
                 },
               ],
             },
           },
         },
       },
-      {
-        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
-        untrustedMachineUsers: new Set(["suzuki-shunsuke-bot"]),
-        githubToken: "",
-        repositoryOwner: "suzuki-shunsuke",
-        repositoryName: "validate-pr-review-action",
-        pullRequestNumber: 1,
-      },
+      getInput(["/apps/renovate", "/apps/dependabot"], ["suzuki-shunsuke-bot"]),
     ),
   ).toStrictEqual({
-    headSHA: "1234567890abcdef1234567890abcdef12345678",
+    headSHA: latestSHA,
     author: {
       login: "suzuki-shunsuke-bot",
       untrusted: true,
@@ -266,28 +259,22 @@ test("analyze - pr author is an untrusted app", () => {
       {
         repository: {
           pullRequest: {
-            headRefOid: "1234567890abcdef1234567890abcdef12345678",
-            author: {
-              login: "suzuki-shunsuke-app", // untrusted app
-              resourcePath: "/apps/suzuki-shunsuke-app",
-            },
+            headRefOid: latestSHA,
+            author: untrustedApp, // untrusted app
             commits: {
               totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                     committer: {
                       user: null,
                     },
                     author: {
                       user: {
                         login: "suzuki-shunsuke-2",
-                        resourcePath: "/suzuki-shunsuke",
+                        resourcePath: "/suzuki-shunsuke-2",
                       },
                     },
                   },
@@ -296,37 +283,24 @@ test("analyze - pr author is an untrusted app", () => {
             },
             reviews: {
               totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
                   state: "APPROVED",
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                   },
-                  author: {
-                    login: "suzuki-shunsuke",
-                    resourcePath: "/suzuki-shunsuke",
-                  },
+                  author: suzuki,
                 },
               ],
             },
           },
         },
       },
-      {
-        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
-        untrustedMachineUsers: new Set(),
-        githubToken: "",
-        repositoryOwner: "suzuki-shunsuke",
-        repositoryName: "validate-pr-review-action",
-        pullRequestNumber: 1,
-      },
+      getInput(["/apps/renovate", "/apps/dependabot"], []),
     ),
   ).toStrictEqual({
-    headSHA: "1234567890abcdef1234567890abcdef12345678",
+    headSHA: latestSHA,
     author: {
       login: "suzuki-shunsuke-app",
       untrusted: true,
@@ -352,65 +326,28 @@ test("analyze - filter reviews", () => {
       {
         repository: {
           pullRequest: {
-            headRefOid: "1234567890abcdef1234567890abcdef12345678",
-            author: {
-              login: "octocat",
-              resourcePath: "/octocat",
-            },
+            headRefOid: latestSHA,
+            author: octocat,
             commits: {
               totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
-                  commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
-                    committer: {
-                      user: {
-                        login: "octocat",
-                        resourcePath: "/octocat",
-                      },
-                    },
-                    author: {
-                      user: {
-                        login: "octocat",
-                        resourcePath: "/octocat",
-                      },
-                    },
-                  },
+                  commit: octocatLatestCommit,
                 },
                 {
-                  commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
-                    committer: {
-                      user: {
-                        login: "suzuki-shunsuke",
-                        resourcePath: "/suzuki-shunsuke",
-                      },
-                    },
-                    author: {
-                      user: {
-                        login: "suzuki-shunsuke",
-                        resourcePath: "/suzuki-shunsuke",
-                      },
-                    },
-                  },
+                  commit: suzukiLatestCommit,
                 },
               ],
             },
             reviews: {
               totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
                   state: "APPROVED",
                   commit: {
-                    oid: "0000000000000000000000000000000000000000", // ignore old approvals
+                    oid: oldSHA, // ignore old approvals
                   },
                   author: {
                     login: "suzuki-shunsuke-2",
@@ -420,59 +357,40 @@ test("analyze - filter reviews", () => {
                 {
                   state: "APPROVED",
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                   },
-                  author: {
-                    login: "suzuki-shunsuke", // ignore approvals from committers
-                    resourcePath: "/suzuki-shunsuke",
-                  },
+                  author: suzuki, // ignore approvals from committers
                 },
                 {
                   state: "COMMENT", // ignore other than APPROVED
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                   },
-                  author: {
-                    login: "suzuki-shunsuke",
-                    resourcePath: "/suzuki-shunsuke",
-                  },
+                  author: suzuki,
                 },
                 {
                   state: "APPROVED",
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                   },
-                  author: {
-                    login: "github-actions",
-                    resourcePath: "/apps/github-actions", // ignore approvals from apps
-                  },
+                  author: untrustedApp, // ignore approvals from apps
                 },
                 {
                   state: "APPROVED",
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                   },
-                  author: {
-                    login: "suzuki-shunsuke-bot",
-                    resourcePath: "/suzuki-shunsuke-bot", // ignore approvals from untrusted machine users
-                  },
+                  author: suzukiBot, // ignore approvals from untrusted machine users
                 },
               ],
             },
           },
         },
       },
-      {
-        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
-        untrustedMachineUsers: new Set(["suzuki-shunsuke-bot"]),
-        githubToken: "",
-        repositoryOwner: "suzuki-shunsuke",
-        repositoryName: "validate-pr-review-action",
-        pullRequestNumber: 1,
-      },
+      getInput(["/apps/renovate", "/apps/dependabot"], ["suzuki-shunsuke-bot"]),
     ),
   ).toStrictEqual({
-    headSHA: "1234567890abcdef1234567890abcdef12345678",
+    headSHA: latestSHA,
     author: {
       login: "octocat",
       untrusted: false,
@@ -488,7 +406,7 @@ test("analyze - filter reviews", () => {
       {
         message: "approval from app is ignored",
         user: {
-          login: "github-actions",
+          login: "suzuki-shunsuke-app",
         },
       },
       {
@@ -511,39 +429,27 @@ test("analyze - not linked user", () => {
       {
         repository: {
           pullRequest: {
-            headRefOid: "1234567890abcdef1234567890abcdef12345678",
-            author: {
-              login: "octocat",
-              resourcePath: "/octocat",
-            },
+            headRefOid: latestSHA,
+            author: octocat,
             commits: {
               totalCount: 2,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
                   commit: {
-                    oid: "1234567890abcdef123456789011111111111111",
+                    oid: latestSHA,
                     committer: {
-                      user: {
-                        login: "octocat",
-                        resourcePath: "/octocat",
-                      },
+                      user: octocat,
                     },
                     author: {
-                      user: {
-                        login: "octocat",
-                        resourcePath: "/octocat",
-                      },
+                      user: octocat,
                     },
                   },
                 },
                 {
                   commit: {
                     // not linked to any GitHub user
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                     committer: {
                       user: null,
                     },
@@ -556,37 +462,24 @@ test("analyze - not linked user", () => {
             },
             reviews: {
               totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
                   state: "APPROVED",
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                   },
-                  author: {
-                    login: "suzuki-shunsuke",
-                    resourcePath: "/suzuki-shunsuke",
-                  },
+                  author: suzuki,
                 },
               ],
             },
           },
         },
       },
-      {
-        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
-        untrustedMachineUsers: new Set(),
-        githubToken: "",
-        repositoryOwner: "suzuki-shunsuke",
-        repositoryName: "validate-pr-review-action",
-        pullRequestNumber: 1,
-      },
+      getInput(["/apps/renovate", "/apps/dependabot"], []),
     ),
   ).toStrictEqual({
-    headSHA: "1234567890abcdef1234567890abcdef12345678",
+    headSHA: latestSHA,
     author: {
       login: "octocat",
       untrusted: false,
@@ -601,7 +494,7 @@ test("analyze - not linked user", () => {
     ignoredApprovals: [],
     untrustedCommits: [
       {
-        sha: "1234567890abcdef1234567890abcdef12345678",
+        sha: latestSHA,
         message: "a commit isn't linked to any GitHub user",
       },
     ],
@@ -617,32 +510,20 @@ test("analyzeReviews - normal", () => {
       {
         repository: {
           pullRequest: {
-            headRefOid: "1234567890abcdef1234567890abcdef12345678",
-            author: {
-              login: "octocat",
-              resourcePath: "/octocat",
-            },
+            headRefOid: latestSHA,
+            author: octocat,
             commits: {
               totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                     committer: {
-                      user: {
-                        login: "octocat",
-                        resourcePath: "/octocat",
-                      },
+                      user: octocat,
                     },
                     author: {
-                      user: {
-                        login: "octocat",
-                        resourcePath: "/octocat",
-                      },
+                      user: octocat,
                     },
                   },
                 },
@@ -650,34 +531,21 @@ test("analyzeReviews - normal", () => {
             },
             reviews: {
               totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
+              pageInfo: pageInfo,
               nodes: [
                 {
                   state: "APPROVED",
                   commit: {
-                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    oid: latestSHA,
                   },
-                  author: {
-                    login: "suzuki-shunsuke",
-                    resourcePath: "/suzuki-shunsuke",
-                  },
+                  author: suzuki,
                 },
               ],
             },
           },
         },
       },
-      {
-        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
-        untrustedMachineUsers: new Set(),
-        githubToken: "",
-        repositoryOwner: "suzuki-shunsuke",
-        repositoryName: "validate-pr-review-action",
-        pullRequestNumber: 1,
-      },
+      getInput(["/apps/renovate", "/apps/dependabot"], []),
       new Set(["octocat"]),
     ),
   ).toStrictEqual({
