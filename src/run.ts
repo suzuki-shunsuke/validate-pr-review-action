@@ -3,6 +3,7 @@ import * as github from "./github";
 import * as lib from "./lib";
 import * as type from "./type";
 import { z } from "zod";
+import { match } from "assert";
 
 export const main = async () => {
   const trustedApps = new Set<string>();
@@ -15,12 +16,20 @@ export const main = async () => {
     }
     trustedApps.add("/apps/" + app);
   }
+  const untrustedMachineUsers = new Set<string>();
+  const untrustedMachineUserRegexps: RegExp[] = [];
+  for (const user of core.getMultilineInput("untrusted_machine_users")) {
+    if (user.startsWith("/") && user.endsWith("/")) {
+      untrustedMachineUserRegexps.push(new RegExp(user.slice(1, -1)));
+      continue;
+    }
+    untrustedMachineUsers.add(user);
+  }
   run({
     githubToken: core.getInput("github_token"),
     trustedApps: trustedApps,
-    untrustedMachineUsers: new Set<string>(
-      core.getMultilineInput("untrusted_machine_users"),
-    ),
+    untrustedMachineUsers: untrustedMachineUsers,
+    untrustedMachineUserRegexps: untrustedMachineUserRegexps,
     repositoryOwner: core.getInput("repository_owner"),
     repositoryName: core.getInput("repository_name"),
     pullRequestNumber: parseInt(core.getInput("pull_request_number"), 10),
@@ -54,6 +63,9 @@ const run = async (input: lib.Input) => {
       {
         trustedApps: [...input.trustedApps],
         untrustedMachineUsers: [...input.untrustedMachineUsers],
+        untrustedMachineUserRegExps: [
+          ...input.untrustedMachineUserRegexps.map((r) => r.toString()),
+        ],
         repositoryOwner: input.repositoryOwner,
         repositoryName: input.repositoryName,
         pullRequestNumber: input.pullRequestNumber,
@@ -196,6 +208,21 @@ const analyzeCommits = (pr: type.PullRequest, input: lib.Input): Commits => {
   return commits;
 };
 
+const matchUntrustedMachineUser = (
+  login: string,
+  input: lib.Input,
+): boolean => {
+  if (input.untrustedMachineUsers.has(login)) {
+    return true;
+  }
+  for (const regexp of input.untrustedMachineUserRegexps) {
+    if (regexp.test(login)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export const analyzeReviews = (
   pr: type.PullRequest,
   input: lib.Input,
@@ -220,7 +247,7 @@ export const analyzeReviews = (
       });
       continue;
     }
-    if (input.untrustedMachineUsers.has(review.author.login)) {
+    if (matchUntrustedMachineUser(review.author.login, input)) {
       approvals.ignored.push({
         user: {
           login: review.author.login,
@@ -265,7 +292,7 @@ const validateCommitter = (
           message: "the committer is an untrusted app",
         };
   }
-  return input.untrustedMachineUsers.has(user.login)
+  return matchUntrustedMachineUser(user.login, input)
     ? {
         sha: commit.oid,
         committer: {
@@ -305,5 +332,5 @@ const checkIfUserRequiresTwoApprovals = (
     return !input.trustedApps.has(user.resourcePath);
   }
   // Require two approvals for PRs created by untrusted machine users
-  return input.untrustedMachineUsers.has(user.login);
+  return matchUntrustedMachineUser(user.login, input);
 };
