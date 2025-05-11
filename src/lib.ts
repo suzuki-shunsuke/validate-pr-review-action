@@ -8,5 +8,6 @@ export type Input = {
   pullRequestNumber: number;
   trustedApps: Set<string>;
   untrustedMachineUsers: Set<string>;
+  untrustedMachineUserRegexps: RegExp[];
   // postComment: boolean;
 };
