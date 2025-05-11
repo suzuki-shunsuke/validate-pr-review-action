@@ -7,7 +7,9 @@ import { match } from "assert";
 
 export const main = async () => {
   const trustedApps = new Set<string>();
-  for (const app of core.getMultilineInput("trusted_apps")) {
+  for (const app of core
+    .getMultilineInput("trusted_apps")
+    .filter((a) => !a.startsWith("#"))) {
     if (app.endsWith("[bot]")) {
       throw new Error("Each line of trusted_apps must not end with [bot]");
     }
@@ -18,7 +20,9 @@ export const main = async () => {
   }
   const untrustedMachineUsers = new Set<string>();
   const untrustedMachineUserRegexps: RegExp[] = [];
-  for (const user of core.getMultilineInput("untrusted_machine_users")) {
+  for (const user of core
+    .getMultilineInput("untrusted_machine_users")
+    .filter((a) => !a.startsWith("#"))) {
     if (user.startsWith("/") && user.endsWith("/")) {
       untrustedMachineUserRegexps.push(new RegExp(user.slice(1, -1)));
       continue;
@@ -29,7 +33,9 @@ export const main = async () => {
     githubToken: core.getInput("github_token"),
     trustedApps: trustedApps,
     trustedMachineUsers: new Set(
-      core.getMultilineInput("trusted_machine_users"),
+      core
+        .getMultilineInput("trusted_machine_users")
+        .filter((a) => !a.startsWith("#")),
     ),
     untrustedMachineUsers: untrustedMachineUsers,
     untrustedMachineUserRegexps: untrustedMachineUserRegexps,

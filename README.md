@@ -77,17 +77,20 @@ with:
   # trusted_apps and trusted_machine_users don't support regular expressions.
   # You must specify trusted apps and machine users explicitly.
   trusted_apps: |
+    # A line starting with "#" is ignored as comment
     renovate
     dependabot
   # untrusted_machine_users supports regular expressions too.
   # Enclose a regular expression between slashes like `/-bot$/`.
   untrusted_machine_users: |
+    # A line starting with "#" is ignored as comment
     mini-core
     /-bot$/
   # trusted_machine_users is a list of trusted apps.
   # If a user matches with both `trusted_machine_users` and `untrusted_machine_users`, it is considered trusted.
   # trusted_machine_users is useful to exclude specific machine users from regular expressions of untrusted_machine_users.
   trusted_machine_users: |
+    # A line starting with "#" is ignored as comment
     suzuki-shunsuke-bot
 ```
 

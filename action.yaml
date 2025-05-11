@@ -10,6 +10,7 @@ inputs:
     description: |
       Logins of Trusted apps.
       Each line must not end with "[bot]", and must not contain "/".
+      Lines starting with "#" are ignored.
     required: false
     default: |
       renovate
@@ -17,6 +18,7 @@ inputs:
   trusted_machine_users:
     description: |
       Logins of Trusted machine users.
+      Lines starting with "#" are ignored.
       If a user matches with both `trusted_machine_users` and `untrusted_machine_users`, it is considered trusted.
       trusted_machine_users is useful to exclude specific machine users from regular expressions of untrusted_machine_users.
       e.g. Users with the suffix "-bot" are untrusted, but "suzuki-shunsuke-bot" is trusted.
@@ -28,6 +30,7 @@ inputs:
   untrusted_machine_users:
     description: |
       Logins of untrusted Machine Users.
+      Lines starting with "#" are ignored.
       regular expressions are also available.
       Enclose a regular expression between slashes like `/-bot$/`.
       e.g.
