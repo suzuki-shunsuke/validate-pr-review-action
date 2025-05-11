@@ -12,3 +12,13 @@ export type Input = {
   untrustedMachineUserRegexps: RegExp[];
   // postComment: boolean;
 };
+
+export type RawInput = {
+  githubToken: string;
+  repositoryOwner: string;
+  repositoryName: string;
+  pullRequestNumber: string;
+  trustedApps: string[];
+  trustedMachineUsers: string[];
+  untrustedMachineUsers: string[];
+};
