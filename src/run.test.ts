@@ -61,7 +61,7 @@ test("analyze - normal", () => {
         },
       },
       {
-        trustedApps: new Set(["renovate[bot]", "dependabot[bot]"]),
+        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
         untrustedMachineUsers: new Set(),
         githubToken: "",
         repositoryOwner: "suzuki-shunsuke",
@@ -206,7 +206,7 @@ test("analyze - filter reviews", () => {
         },
       },
       {
-        trustedApps: new Set(["renovate[bot]", "dependabot[bot]"]),
+        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
         untrustedMachineUsers: new Set(["suzuki-shunsuke-bot"]),
         githubToken: "",
         repositoryOwner: "suzuki-shunsuke",
@@ -320,7 +320,7 @@ test("analyze - not linked user", () => {
         },
       },
       {
-        trustedApps: new Set(["renovate[bot]", "dependabot[bot]"]),
+        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
         untrustedMachineUsers: new Set(),
         githubToken: "",
         repositoryOwner: "suzuki-shunsuke",
@@ -414,7 +414,7 @@ test("analyzeReviews - normal", () => {
         },
       },
       {
-        trustedApps: new Set(["renovate[bot]", "dependabot[bot]"]),
+        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
         untrustedMachineUsers: new Set(),
         githubToken: "",
         repositoryOwner: "suzuki-shunsuke",
