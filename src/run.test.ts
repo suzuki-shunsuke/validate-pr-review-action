@@ -225,19 +225,19 @@ test("analyze - filter reviews", () => {
         message: "approval from committer is ignored",
         user: {
           login: "suzuki-shunsuke",
-        }
+        },
       },
       {
         message: "approval from app is ignored",
         user: {
           login: "github-actions",
-        }
+        },
       },
       {
         message: "approval from untrusted machine user is ignored",
         user: {
           login: "suzuki-shunsuke-bot",
-        }
+        },
       },
     ],
     untrustedCommits: [],
@@ -283,7 +283,8 @@ test("analyze - not linked user", () => {
                   },
                 },
                 {
-                  commit: { // not linked to any GitHub user
+                  commit: {
+                    // not linked to any GitHub user
                     oid: "1234567890abcdef1234567890abcdef12345678",
                     committer: {
                       user: null,
