@@ -60,7 +60,7 @@ const suzukiLatestCommit = {
   author: {
     user: suzuki,
   },
-}
+};
 
 const renovateLatestCommit = {
   oid: latestSHA,
@@ -86,7 +86,7 @@ const commits = (commits: type.Commit[]) => {
   return {
     totalCount: commits.length,
     pageInfo: pageInfo,
-    nodes: commits.map(commit => ({
+    nodes: commits.map((commit) => ({
       commit: commit,
     })),
   };
@@ -109,13 +109,15 @@ test("analyze - normal", () => {
             headRefOid: latestSHA,
             author: octocat,
             commits: commits([octocatLatestCommit]),
-            reviews: reviews([{
-              state: "APPROVED",
-              commit: {
-                oid: latestSHA,
+            reviews: reviews([
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
+                },
+                author: suzuki,
               },
-              author: suzuki,
-            }]),
+            ]),
           },
         },
       },
@@ -150,13 +152,15 @@ test("analyze - pr author is a trusted app", () => {
             headRefOid: latestSHA,
             author: renovate, // trusted app
             commits: commits([renovateLatestCommit]),
-            reviews: reviews([{
-              state: "APPROVED",
-              commit: {
-                oid: latestSHA,
+            reviews: reviews([
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
+                },
+                author: suzuki,
               },
-              author: suzuki,
-            }]),
+            ]),
           },
         },
       },
@@ -198,7 +202,8 @@ test("analyze - pr author is an untrusted machine user", () => {
                   oid: latestSHA,
                 },
                 author: suzuki,
-              }]),
+              },
+            ]),
           },
         },
       },
