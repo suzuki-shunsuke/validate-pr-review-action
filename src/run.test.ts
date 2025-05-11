@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import * as run from "./run";
 import * as lib from "./lib";
-import { get } from "http";
+import * as type from "./type";
 
 const latestSHA = "1234567890abcdef1234567890abcdef12345678";
 const oldSHA = "0000000000000000000000000000000000000000";
@@ -62,6 +62,69 @@ const suzukiLatestCommit = {
   },
 };
 
+const renovateLatestCommit = {
+  oid: latestSHA,
+  committer: {
+    user: null,
+  },
+  author: {
+    user: renovate,
+  },
+};
+
+const notLinkedLatestCommit = {
+  oid: latestSHA,
+  committer: {
+    user: null,
+  },
+  author: {
+    user: null,
+  },
+};
+
+const commits = (commits: type.Commit[]) => {
+  return {
+    totalCount: commits.length,
+    pageInfo: pageInfo,
+    nodes: commits.map((commit) => ({
+      commit: commit,
+    })),
+  };
+};
+
+const reviews = (reviews: type.Review[]) => {
+  return {
+    totalCount: commits.length,
+    pageInfo: pageInfo,
+    nodes: reviews,
+  };
+};
+
+const latestApprovalFromSuzuki = {
+  state: "APPROVED",
+  commit: {
+    oid: latestSHA,
+  },
+  author: suzuki,
+};
+
+const trustedApprovalFromSuzuki = {
+  user: {
+    login: "suzuki-shunsuke",
+  },
+};
+
+const authors = {
+  octocat: {
+    login: "octocat",
+    untrusted: false,
+  },
+  renovate: {
+    login: "renovate",
+    untrusted: false,
+  },
+};
+
 test("analyze - normal", () => {
   expect(
     run.analyze(
@@ -70,31 +133,8 @@ test("analyze - normal", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: octocat,
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: octocatLatestCommit,
-                },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([latestApprovalFromSuzuki]),
           },
         },
       },
@@ -102,21 +142,39 @@ test("analyze - normal", () => {
     ),
   ).toStrictEqual({
     headSHA: latestSHA,
-    author: {
-      login: "octocat",
-      untrusted: false,
-    },
-    trustedApprovals: [
-      {
-        user: {
-          login: "suzuki-shunsuke",
-        },
-      },
-    ],
+    author: authors.octocat,
+    trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
     twoApprovalsAreRequired: false,
     valid: true,
+  });
+});
+
+test("analyze - at least one approval is required", () => {
+  expect(
+    run.analyze(
+      {
+        repository: {
+          pullRequest: {
+            headRefOid: latestSHA,
+            author: octocat,
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([]),
+          },
+        },
+      },
+      getInput(["/apps/renovate", "/apps/dependabot"], []),
+    ),
+  ).toStrictEqual({
+    headSHA: latestSHA,
+    author: authors.octocat,
+    trustedApprovals: [],
+    ignoredApprovals: [],
+    untrustedCommits: [],
+    twoApprovalsAreRequired: false,
+    message: "At least one approval is required",
+    valid: false,
   });
 });
 
@@ -128,39 +186,8 @@ test("analyze - pr author is a trusted app", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: renovate, // trusted app
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: null,
-                    },
-                    author: {
-                      user: renovate,
-                    },
-                  },
-                },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+            commits: commits([renovateLatestCommit]),
+            reviews: reviews([latestApprovalFromSuzuki]),
           },
         },
       },
@@ -168,17 +195,8 @@ test("analyze - pr author is a trusted app", () => {
     ),
   ).toStrictEqual({
     headSHA: latestSHA,
-    author: {
-      login: "renovate",
-      untrusted: false,
-    },
-    trustedApprovals: [
-      {
-        user: {
-          login: "suzuki-shunsuke",
-        },
-      },
-    ],
+    author: authors.renovate,
+    trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
     twoApprovalsAreRequired: false,
@@ -194,39 +212,8 @@ test("analyze - pr author is an untrusted machine user", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: suzukiBot, // untrusted machine user
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: null,
-                    },
-                    author: {
-                      user: octocat,
-                    },
-                  },
-                },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([latestApprovalFromSuzuki]),
           },
         },
       },
@@ -238,13 +225,7 @@ test("analyze - pr author is an untrusted machine user", () => {
       login: "suzuki-shunsuke-bot",
       untrusted: true,
     },
-    trustedApprovals: [
-      {
-        user: {
-          login: "suzuki-shunsuke",
-        },
-      },
-    ],
+    trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
     twoApprovalsAreRequired: true,
@@ -261,39 +242,8 @@ test("analyze - pr author is an untrusted app", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: untrustedApp, // untrusted app
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: null,
-                    },
-                    author: {
-                      user: {
-                        login: "suzuki-shunsuke-2",
-                        resourcePath: "/suzuki-shunsuke-2",
-                      },
-                    },
-                  },
-                },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([latestApprovalFromSuzuki]),
           },
         },
       },
@@ -305,13 +255,7 @@ test("analyze - pr author is an untrusted app", () => {
       login: "suzuki-shunsuke-app",
       untrusted: true,
     },
-    trustedApprovals: [
-      {
-        user: {
-          login: "suzuki-shunsuke",
-        },
-      },
-    ],
+    trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
     twoApprovalsAreRequired: true,
@@ -328,62 +272,47 @@ test("analyze - filter reviews", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: octocat,
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: octocatLatestCommit,
+            commits: commits([octocatLatestCommit, suzukiLatestCommit]),
+            reviews: reviews([
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: oldSHA, // ignore old approvals
                 },
-                {
-                  commit: suzukiLatestCommit,
+                author: {
+                  login: "suzuki-shunsuke-2",
+                  resourcePath: "/suzuki-shunsuke-2",
                 },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: oldSHA, // ignore old approvals
-                  },
-                  author: {
-                    login: "suzuki-shunsuke-2",
-                    resourcePath: "/suzuki-shunsuke-2",
-                  },
+              },
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
                 },
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki, // ignore approvals from committers
+                author: suzuki, // ignore approvals from committers
+              },
+              {
+                state: "COMMENT", // ignore other than APPROVED
+                commit: {
+                  oid: latestSHA,
                 },
-                {
-                  state: "COMMENT", // ignore other than APPROVED
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
+                author: suzuki,
+              },
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
                 },
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: untrustedApp, // ignore approvals from apps
+                author: untrustedApp, // ignore approvals from apps
+              },
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
                 },
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzukiBot, // ignore approvals from untrusted machine users
-                },
-              ],
-            },
+                author: suzukiBot, // ignore approvals from untrusted machine users
+              },
+            ]),
           },
         },
       },
@@ -391,10 +320,7 @@ test("analyze - filter reviews", () => {
     ),
   ).toStrictEqual({
     headSHA: latestSHA,
-    author: {
-      login: "octocat",
-      untrusted: false,
-    },
+    author: authors.octocat,
     trustedApprovals: [],
     ignoredApprovals: [
       {
@@ -431,48 +357,8 @@ test("analyze - not linked user", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: octocat,
-            commits: {
-              totalCount: 2,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: octocat,
-                    },
-                    author: {
-                      user: octocat,
-                    },
-                  },
-                },
-                {
-                  commit: {
-                    // not linked to any GitHub user
-                    oid: latestSHA,
-                    committer: {
-                      user: null,
-                    },
-                    author: {
-                      user: null,
-                    },
-                  },
-                },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+            commits: commits([octocatLatestCommit, notLinkedLatestCommit]),
+            reviews: reviews([latestApprovalFromSuzuki]),
           },
         },
       },
@@ -480,17 +366,8 @@ test("analyze - not linked user", () => {
     ),
   ).toStrictEqual({
     headSHA: latestSHA,
-    author: {
-      login: "octocat",
-      untrusted: false,
-    },
-    trustedApprovals: [
-      {
-        user: {
-          login: "suzuki-shunsuke",
-        },
-      },
-    ],
+    author: authors.octocat,
+    trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [
       {
@@ -512,36 +389,8 @@ test("analyzeReviews - normal", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: octocat,
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: octocat,
-                    },
-                    author: {
-                      user: octocat,
-                    },
-                  },
-                },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([latestApprovalFromSuzuki]),
           },
         },
       },
@@ -549,13 +398,7 @@ test("analyzeReviews - normal", () => {
       new Set(["octocat"]),
     ),
   ).toStrictEqual({
-    trusted: [
-      {
-        user: {
-          login: "suzuki-shunsuke",
-        },
-      },
-    ],
+    trusted: [trustedApprovalFromSuzuki],
     ignored: [],
   });
 });
