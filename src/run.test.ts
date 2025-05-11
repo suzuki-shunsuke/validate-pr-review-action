@@ -284,7 +284,12 @@ test("analyze - trusted_machine_users", () => {
           },
         },
       },
-      getInput(["/apps/renovate", "/apps/dependabot"], [], ["suzuki-shunsuke-bot"], ["-bot$"]),
+      getInput(
+        ["/apps/renovate", "/apps/dependabot"],
+        [],
+        ["suzuki-shunsuke-bot"],
+        ["-bot$"],
+      ),
     ),
   ).toStrictEqual({
     headSHA: latestSHA,
