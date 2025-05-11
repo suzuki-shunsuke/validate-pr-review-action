@@ -54,7 +54,7 @@ jobs:
       pull-requests: read # To get pull requests
       contents: read # To get pull request commits
     steps:
-      - uses: suzuki-shunsuke/validate-pr-review-action@latest
+      - uses: suzuki-shunsuke/validate-pr-review-action@bd967a12742566a5e3fb02878e4e2447da68f72e # v0.0.4
 ```
 
 ## Action's Inputs / Outputs
@@ -72,7 +72,7 @@ This action doesn't verify commit signing because you can do it using Branch Rul
 You can specify lists of trusted GitHub Apps, trusted machine users, and untrusted machine users.
 
 ```yaml
-uses: suzuki-shunsuke/validate-pr-review-action@latest
+uses: suzuki-shunsuke/validate-pr-review-action@bd967a12742566a5e3fb02878e4e2447da68f72e # v0.0.4
 with:
   # trusted_apps and trusted_machine_users don't support regular expressions.
   # You must specify trusted apps and machine users explicitly.
@@ -140,7 +140,7 @@ The following versions are available.
 1. [Release versions](https://github.com/suzuki-shunsuke/validate-pr-review-action/releases)
 
 ```yaml
-uses: suzuki-shunsuke/validate-pr-review-action@v0.0.1
+uses: suzuki-shunsuke/validate-pr-review-action@bd967a12742566a5e3fb02878e4e2447da68f72e # v0.0.4
 ```
 
 2. [Pull Request versions](https://github.com/suzuki-shunsuke/validate-pr-review-action/branches/all?query=pr%2F&lastTab=overview): These versions are removed when we feel unnecessary. These versions are used to test pull requests.
