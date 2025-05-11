@@ -65,6 +65,7 @@ const run = async (input: lib.Input) => {
     JSON.stringify(
       {
         trustedApps: [...input.trustedApps],
+        trustedMachineUsers: [...input.trustedMachineUsers],
         untrustedMachineUsers: [...input.untrustedMachineUsers],
         untrustedMachineUserRegExps: [
           ...input.untrustedMachineUserRegexps.map((r) => r.toString()),
