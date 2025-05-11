@@ -5,10 +5,4 @@ export default defineConfig({
     globals: true,
     environment: "node",
   },
-  resolve: {
-    alias: {
-      // https://vitest.dev/guide/common-errors#cannot-find-module-relative-path
-      lib: new URL("../lib/dist", import.meta.url).pathname,
-    },
-  },
 });
