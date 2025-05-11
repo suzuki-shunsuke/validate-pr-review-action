@@ -206,7 +206,10 @@ const analyzeCommits = (pr: type.PullRequest, input: lib.Input): Commits => {
   return commits;
 };
 
-const matchUntrustedMachineUser = (login: string, input: lib.Input): boolean => {
+const matchUntrustedMachineUser = (
+  login: string,
+  input: lib.Input,
+): boolean => {
   if (input.untrustedMachineUsers.has(login)) {
     return true;
   }
@@ -278,25 +281,25 @@ const validateCommitter = (
     return input.trustedApps.has(user.resourcePath)
       ? undefined
       : {
+          sha: commit.oid,
+          committer: {
+            login: user.login,
+            untrusted: true,
+            message: "untrusted app",
+          },
+          message: "the committer is an untrusted app",
+        };
+  }
+  return matchUntrustedMachineUser(user.login, input)
+    ? {
         sha: commit.oid,
         committer: {
           login: user.login,
           untrusted: true,
-          message: "untrusted app",
+          message: "untrusted machine user",
         },
-        message: "the committer is an untrusted app",
-      };
-  }
-  return matchUntrustedMachineUser(user.login, input)
-    ? {
-      sha: commit.oid,
-      committer: {
-        login: user.login,
-        untrusted: true,
-        message: "untrusted machine user",
-      },
-      message: "the committer is an untrusted machine user",
-    }
+        message: "the committer is an untrusted machine user",
+      }
     : undefined;
 };
 

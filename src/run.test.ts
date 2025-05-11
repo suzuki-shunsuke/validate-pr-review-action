@@ -245,7 +245,10 @@ test("analyze - pr author is an untrusted machine user (2 approvals)", () => {
             headRefOid: latestSHA,
             author: suzukiBot, // untrusted machine user
             commits: commits([octocatLatestCommit]),
-            reviews: reviews([latestApprovalFromSuzuki, latestApprovalFromSuzuki2]),
+            reviews: reviews([
+              latestApprovalFromSuzuki,
+              latestApprovalFromSuzuki2,
+            ]),
           },
         },
       },
