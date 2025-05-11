@@ -25,10 +25,6 @@ const untrustedApp = {
   login: "suzuki-shunsuke-app",
   resourcePath: "/apps/suzuki-shunsuke-app",
 };
-const githubActions = {
-  login: "github-actions",
-  resourcePath: "/apps/github-actions",
-};
 const pageInfo = {
   hasNextPage: false,
   endCursor: "",
@@ -46,6 +42,26 @@ const getInput = (
   untrustedMachineUsers: new Set(untrustedMachineUsers),
 });
 
+const octocatLatestCommit = {
+  oid: latestSHA,
+  committer: {
+    user: octocat,
+  },
+  author: {
+    user: octocat,
+  },
+};
+
+const suzukiLatestCommit = {
+  oid: latestSHA,
+  committer: {
+    user: suzuki,
+  },
+  author: {
+    user: suzuki,
+  },
+};
+
 test("analyze - normal", () => {
   expect(
     run.analyze(
@@ -59,15 +75,7 @@ test("analyze - normal", () => {
               pageInfo: pageInfo,
               nodes: [
                 {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: octocat,
-                    },
-                    author: {
-                      user: octocat,
-                    },
-                  },
+                  commit: octocatLatestCommit,
                 },
               ],
             },
@@ -266,7 +274,7 @@ test("analyze - pr author is an untrusted app", () => {
                     author: {
                       user: {
                         login: "suzuki-shunsuke-2",
-                        resourcePath: "/suzuki-shunsuke",
+                        resourcePath: "/suzuki-shunsuke-2",
                       },
                     },
                   },
@@ -325,26 +333,10 @@ test("analyze - filter reviews", () => {
               pageInfo: pageInfo,
               nodes: [
                 {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: octocat,
-                    },
-                    author: {
-                      user: octocat,
-                    },
-                  },
+                  commit: octocatLatestCommit,
                 },
                 {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: suzuki,
-                    },
-                    author: {
-                      user: suzuki,
-                    },
-                  },
+                  commit: suzukiLatestCommit,
                 },
               ],
             },
@@ -381,7 +373,7 @@ test("analyze - filter reviews", () => {
                   commit: {
                     oid: latestSHA,
                   },
-                  author: githubActions, // ignore approvals from apps
+                  author: untrustedApp, // ignore approvals from apps
                 },
                 {
                   state: "APPROVED",
@@ -414,7 +406,7 @@ test("analyze - filter reviews", () => {
       {
         message: "approval from app is ignored",
         user: {
-          login: "github-actions",
+          login: "suzuki-shunsuke-app",
         },
       },
       {
