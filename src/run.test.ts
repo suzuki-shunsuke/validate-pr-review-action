@@ -89,6 +89,263 @@ test("analyze - normal", () => {
   });
 });
 
+test("analyze - pr author is a trusted app", () => {
+  expect(
+    run.analyze(
+      {
+        repository: {
+          pullRequest: {
+            headRefOid: "1234567890abcdef1234567890abcdef12345678",
+            author: {
+              login: "renovate", // trusted app
+              resourcePath: "/apps/renovate",
+            },
+            commits: {
+              totalCount: 1,
+              pageInfo: {
+                hasNextPage: false,
+                endCursor: "",
+              },
+              nodes: [
+                {
+                  commit: {
+                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    committer: {
+                      user: null,
+                    },
+                    author: {
+                      user: {
+                        login: "renovate",
+                        resourcePath: "/apps/renovate",
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+            reviews: {
+              totalCount: 1,
+              pageInfo: {
+                hasNextPage: false,
+                endCursor: "",
+              },
+              nodes: [
+                {
+                  state: "APPROVED",
+                  commit: {
+                    oid: "1234567890abcdef1234567890abcdef12345678",
+                  },
+                  author: {
+                    login: "suzuki-shunsuke",
+                    resourcePath: "/suzuki-shunsuke",
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      {
+        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
+        untrustedMachineUsers: new Set(),
+        githubToken: "",
+        repositoryOwner: "suzuki-shunsuke",
+        repositoryName: "validate-pr-review-action",
+        pullRequestNumber: 1,
+      },
+    ),
+  ).toStrictEqual({
+    headSHA: "1234567890abcdef1234567890abcdef12345678",
+    author: {
+      login: "renovate",
+      untrusted: false,
+    },
+    trustedApprovals: [
+      {
+        user: {
+          login: "suzuki-shunsuke",
+        },
+      },
+    ],
+    ignoredApprovals: [],
+    untrustedCommits: [],
+    twoApprovalsAreRequired: false,
+    valid: true,
+  });
+});
+
+test("analyze - pr author is an untrusted machine user", () => {
+  expect(
+    run.analyze(
+      {
+        repository: {
+          pullRequest: {
+            headRefOid: "1234567890abcdef1234567890abcdef12345678",
+            author: {
+              login: "suzuki-shunsuke-bot", // untrusted machine user
+              resourcePath: "/suzuki-shunsuke-bot",
+            },
+            commits: {
+              totalCount: 1,
+              pageInfo: {
+                hasNextPage: false,
+                endCursor: "",
+              },
+              nodes: [
+                {
+                  commit: {
+                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    committer: {
+                      user: null,
+                    },
+                    author: {
+                      user: {
+                        login: "suzuki-shunsuke-2",
+                        resourcePath: "/suzuki-shunsuke-2",
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+            reviews: {
+              totalCount: 1,
+              pageInfo: {
+                hasNextPage: false,
+                endCursor: "",
+              },
+              nodes: [
+                {
+                  state: "APPROVED",
+                  commit: {
+                    oid: "1234567890abcdef1234567890abcdef12345678",
+                  },
+                  author: {
+                    login: "suzuki-shunsuke",
+                    resourcePath: "/suzuki-shunsuke",
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      {
+        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
+        untrustedMachineUsers: new Set(["suzuki-shunsuke-bot"]),
+        githubToken: "",
+        repositoryOwner: "suzuki-shunsuke",
+        repositoryName: "validate-pr-review-action",
+        pullRequestNumber: 1,
+      },
+    ),
+  ).toStrictEqual({
+    headSHA: "1234567890abcdef1234567890abcdef12345678",
+    author: {
+      login: "suzuki-shunsuke-bot",
+      untrusted: true,
+    },
+    trustedApprovals: [
+      {
+        user: {
+          login: "suzuki-shunsuke",
+        },
+      },
+    ],
+    ignoredApprovals: [],
+    untrustedCommits: [],
+    twoApprovalsAreRequired: true,
+    valid: false,
+    message: "At least two approvals are required",
+  });
+});
+
+test("analyze - pr author is an untrusted app", () => {
+  expect(
+    run.analyze(
+      {
+        repository: {
+          pullRequest: {
+            headRefOid: "1234567890abcdef1234567890abcdef12345678",
+            author: {
+              login: "suzuki-shunsuke-app", // untrusted app
+              resourcePath: "/apps/suzuki-shunsuke-app",
+            },
+            commits: {
+              totalCount: 1,
+              pageInfo: {
+                hasNextPage: false,
+                endCursor: "",
+              },
+              nodes: [
+                {
+                  commit: {
+                    oid: "1234567890abcdef1234567890abcdef12345678",
+                    committer: {
+                      user: null,
+                    },
+                    author: {
+                      user: {
+                        login: "suzuki-shunsuke-2",
+                        resourcePath: "/suzuki-shunsuke",
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+            reviews: {
+              totalCount: 1,
+              pageInfo: {
+                hasNextPage: false,
+                endCursor: "",
+              },
+              nodes: [
+                {
+                  state: "APPROVED",
+                  commit: {
+                    oid: "1234567890abcdef1234567890abcdef12345678",
+                  },
+                  author: {
+                    login: "suzuki-shunsuke",
+                    resourcePath: "/suzuki-shunsuke",
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      {
+        trustedApps: new Set(["/apps/renovate", "/apps/dependabot"]),
+        untrustedMachineUsers: new Set(),
+        githubToken: "",
+        repositoryOwner: "suzuki-shunsuke",
+        repositoryName: "validate-pr-review-action",
+        pullRequestNumber: 1,
+      },
+    ),
+  ).toStrictEqual({
+    headSHA: "1234567890abcdef1234567890abcdef12345678",
+    author: {
+      login: "suzuki-shunsuke-app",
+      untrusted: true,
+    },
+    trustedApprovals: [
+      {
+        user: {
+          login: "suzuki-shunsuke",
+        },
+      },
+    ],
+    ignoredApprovals: [],
+    untrustedCommits: [],
+    twoApprovalsAreRequired: true,
+    valid: false,
+    message: "At least two approvals are required",
+  });
+});
+
 test("analyze - filter reviews", () => {
   expect(
     run.analyze(
