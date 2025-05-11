@@ -2,14 +2,24 @@ import * as core from "@actions/core";
 import * as github from "./github";
 import * as lib from "./lib";
 import * as type from "./type";
-import { z } from "zod";
-import { match } from "assert";
 
 export const main = async () => {
+  run(
+    parseInput({
+      githubToken: core.getInput("github_token"),
+      repositoryOwner: core.getInput("repository_owner"),
+      repositoryName: core.getInput("repository_name"),
+      pullRequestNumber: core.getInput("pull_request_number"),
+      trustedApps: core.getMultilineInput("trusted_apps"),
+      trustedMachineUsers: core.getMultilineInput("trusted_machine_users"),
+      untrustedMachineUsers: core.getMultilineInput("untrusted_machine_users"),
+    }),
+  );
+};
+
+const parseInput = (rawInput: lib.RawInput): lib.Input => {
   const trustedApps = new Set<string>();
-  for (const app of core
-    .getMultilineInput("trusted_apps")
-    .filter((a) => !a.startsWith("#"))) {
+  for (const app of rawInput.trustedApps.filter((a) => !a.startsWith("#"))) {
     if (app.endsWith("[bot]")) {
       throw new Error("Each line of trusted_apps must not end with [bot]");
     }
@@ -20,30 +30,27 @@ export const main = async () => {
   }
   const untrustedMachineUsers = new Set<string>();
   const untrustedMachineUserRegexps: RegExp[] = [];
-  for (const user of core
-    .getMultilineInput("untrusted_machine_users")
-    .filter((a) => !a.startsWith("#"))) {
+  for (const user of rawInput.untrustedMachineUsers.filter(
+    (a) => !a.startsWith("#"),
+  )) {
     if (user.startsWith("/") && user.endsWith("/")) {
       untrustedMachineUserRegexps.push(new RegExp(user.slice(1, -1)));
       continue;
     }
     untrustedMachineUsers.add(user);
   }
-  run({
-    githubToken: core.getInput("github_token"),
+  return {
+    githubToken: rawInput.githubToken,
     trustedApps: trustedApps,
     trustedMachineUsers: new Set(
-      core
-        .getMultilineInput("trusted_machine_users")
-        .filter((a) => !a.startsWith("#")),
+      rawInput.trustedMachineUsers.filter((a) => !a.startsWith("#")),
     ),
     untrustedMachineUsers: untrustedMachineUsers,
     untrustedMachineUserRegexps: untrustedMachineUserRegexps,
-    repositoryOwner: core.getInput("repository_owner"),
-    repositoryName: core.getInput("repository_name"),
-    pullRequestNumber: parseInt(core.getInput("pull_request_number"), 10),
-    // postComment: core.getBooleanInput("post_comment"),
-  });
+    repositoryOwner: rawInput.repositoryOwner,
+    repositoryName: rawInput.repositoryName,
+    pullRequestNumber: parseInt(rawInput.pullRequestNumber, 10),
+  };
 };
 
 const getPullRequest = async (input: lib.Input): Promise<type.PullRequest> => {
