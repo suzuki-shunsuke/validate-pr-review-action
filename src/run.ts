@@ -63,7 +63,9 @@ const run = async (input: lib.Input) => {
       {
         trustedApps: [...input.trustedApps],
         untrustedMachineUsers: [...input.untrustedMachineUsers],
-        untrustedMachineUserRegExps: [...input.untrustedMachineUserRegexps],
+        untrustedMachineUserRegExps: [
+          ...input.untrustedMachineUserRegexps.map((r) => r.toString()),
+        ],
         repositoryOwner: input.repositoryOwner,
         repositoryName: input.repositoryName,
         pullRequestNumber: input.pullRequestNumber,
