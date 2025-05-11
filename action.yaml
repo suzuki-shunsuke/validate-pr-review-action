@@ -17,6 +17,11 @@ inputs:
   untrusted_machine_users:
     description: |
       Logins of untrusted Machine Users.
+      regular expressions are also available.
+      e.g.
+      untrusted_machine_users: |
+        suzuki-shunsuke-bot-2
+        /-bot$/
     required: false
   github_token:
     description: |
