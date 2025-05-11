@@ -11,8 +11,8 @@ inputs:
       Trusted apps.
     required: false
     default: |
-      renovate[bot]
-      dependabot[bot]
+      renovate
+      dependabot
   untrusted_machine_users:
     description: |
       Untrusted Machine Users.

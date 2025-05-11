@@ -41,7 +41,9 @@ You don't have to build TypeScript and commit JavaScript.
 
 ## Test JavaScript Actions
 
-Coming soon.
+```sh
+npm t
+```
 
 ## Format code
 

@@ -1,3 +1,4 @@
+import { expect, test } from "vitest";
 import * as run from "./run";
 
 test("analyze - normal", () => {

@@ -5,11 +5,19 @@ import * as type from "./type";
 import { z } from "zod";
 
 export const main = async () => {
+  const trustedApps = new Set<string>();
+  for (const app of core.getMultilineInput("trusted_apps")) {
+    if (app.endsWith("[bot]")) {
+      throw new Error("Each line of trusted_apps must not end with [bot]");
+    }
+    if (app.includes("/")) {
+      throw new Error("Each line of trusted_apps must not include /");
+    }
+    trustedApps.add("/apps/" + app);
+  }
   run({
     githubToken: core.getInput("github_token"),
-    trustedApps: new Set<string>(
-      core.getMultilineInput("trusted_apps").map(appLogin),
-    ),
+    trustedApps: trustedApps,
     untrustedMachineUsers: new Set<string>(
       core.getMultilineInput("untrusted_machine_users"),
     ),
@@ -239,7 +247,7 @@ const validateCommitter = (
   input: lib.Input,
 ): Commit | undefined => {
   if (isApp(user)) {
-    return input.trustedApps.has(user.login)
+    return input.trustedApps.has(user.resourcePath)
       ? undefined
       : {
           sha: commit.oid,
@@ -265,7 +273,7 @@ const validateCommitter = (
 };
 
 const isApp = (user: type.User): boolean =>
-  user.resourcePath.startsWith("/apps/") || user.login.endsWith("[bot]");
+  user.resourcePath.startsWith("/apps/");
 
 const extractApproved = (reviews: type.Review[]): type.Review[] =>
   reviews.filter((review) => review.state === "APPROVED");
@@ -288,11 +296,8 @@ const checkIfUserRequiresTwoApprovals = (
   }
   if (isApp(user)) {
     // Require two approvals for PRs created by trusted apps, excluding trusted apps
-    return !input.trustedApps.has(appLogin(user.login));
+    return !input.trustedApps.has(user.resourcePath);
   }
   // Require two approvals for PRs created by untrusted machine users
   return input.untrustedMachineUsers.has(user.login);
 };
-
-const appLogin = (login: string): string =>
-  login.endsWith("[bot]") ? login : login + "[bot]";
