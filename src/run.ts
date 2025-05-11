@@ -50,13 +50,17 @@ const listReviews = async (input: lib.Input): Promise<type.Review[]> => {
 
 const run = async (input: lib.Input) => {
   core.info(
-    JSON.stringify({
-      trustedApps: [...input.trustedApps],
-      untrustedMachineUsers: [...input.untrustedMachineUsers],
-      repositoryOwner: input.repositoryOwner,
-      repositoryName: input.repositoryName,
-      pullRequestNumber: input.pullRequestNumber,
-    }),
+    JSON.stringify(
+      {
+        trustedApps: [...input.trustedApps],
+        untrustedMachineUsers: [...input.untrustedMachineUsers],
+        repositoryOwner: input.repositoryOwner,
+        repositoryName: input.repositoryName,
+        pullRequestNumber: input.pullRequestNumber,
+      },
+      null,
+      2,
+    ),
   );
   // Get a pull request reviews and committers via GraphQL API
   const pr = await getPullRequest(input);
@@ -70,7 +74,9 @@ const run = async (input: lib.Input) => {
   const result = analyze(pr, input);
   core.info(JSON.stringify(result, null, 2));
   if (!result.valid) {
-    core.setFailed(result.message ?? "Validation failed");
+    core.setFailed(
+      `${result.message ?? "Validation failed"}: https://github.com/suzuki-shunsuke/validate-pr-review-action/blob/main/README.md`,
+    );
   }
 };
 
