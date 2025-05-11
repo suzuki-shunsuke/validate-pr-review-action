@@ -16,6 +16,7 @@ const Review = z.object({
 export type Review = z.infer<typeof Review>;
 
 const Commit = z.object({
+  oid: z.string(),
   committer: z.object({
     user: z.nullable(User),
   }),

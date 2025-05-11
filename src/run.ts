@@ -5,10 +5,20 @@ import * as type from "./type";
 import { z } from "zod";
 
 export const main = async () => {
+  const trustedApps = new Set<string>();
+  for (const app of core.getMultilineInput("trusted_apps")) {
+    if (app.endsWith("[bot]")) {
+      throw new Error("Each line of trusted_apps must not end with [bot]");
+    }
+    if (app.includes("/")) {
+      throw new Error("Each line of trusted_apps must not include /");
+    }
+    trustedApps.add("/apps/" + app);
+  }
   run({
     githubToken: core.getInput("github_token"),
-    trustedApps: new Set(core.getMultilineInput("trusted_apps")),
-    untrustedMachineUsers: new Set(
+    trustedApps: trustedApps,
+    untrustedMachineUsers: new Set<string>(
       core.getMultilineInput("untrusted_machine_users"),
     ),
     repositoryOwner: core.getInput("repository_owner"),
@@ -20,7 +30,6 @@ export const main = async () => {
 
 const getPullRequest = async (input: lib.Input): Promise<type.PullRequest> => {
   const result = await github.getPullRequest(input);
-  core.debug(`pull request: ${JSON.stringify(result)}`);
   const pr = type.PullRequest.parse(result);
   return pr;
 };
@@ -40,6 +49,19 @@ const listReviews = async (input: lib.Input): Promise<type.Review[]> => {
 };
 
 const run = async (input: lib.Input) => {
+  core.info(
+    JSON.stringify(
+      {
+        trustedApps: [...input.trustedApps],
+        untrustedMachineUsers: [...input.untrustedMachineUsers],
+        repositoryOwner: input.repositoryOwner,
+        repositoryName: input.repositoryName,
+        pullRequestNumber: input.pullRequestNumber,
+      },
+      null,
+      2,
+    ),
+  );
   // Get a pull request reviews and committers via GraphQL API
   const pr = await getPullRequest(input);
   if (pr.repository.pullRequest.commits.pageInfo.hasNextPage) {
@@ -48,64 +70,225 @@ const run = async (input: lib.Input) => {
   if (pr.repository.pullRequest.reviews.pageInfo.hasNextPage) {
     pr.repository.pullRequest.reviews.nodes = await listReviews(input);
   }
-  const reviews = ignoreUntrustedReviews(
-    filterReviews(
+  core.info(JSON.stringify(pr, null, 2));
+  const result = analyze(pr, input);
+  core.info(JSON.stringify(result, null, 2));
+  if (!result.valid) {
+    core.setFailed(
+      `${result.message ?? "Validation failed"}: https://github.com/suzuki-shunsuke/validate-pr-review-action/blob/main/README.md`,
+    );
+  }
+};
+
+type Result = {
+  headSHA: string;
+  author: User;
+  trustedApprovals: Approval[];
+  ignoredApprovals: Approval[];
+  untrustedCommits: Commit[];
+  twoApprovalsAreRequired: boolean;
+  valid: boolean;
+  message?: string;
+};
+
+type Commit = {
+  author?: User;
+  committer?: User;
+  sha: string;
+  message: string;
+};
+
+type Approval = {
+  user: User;
+  message?: string;
+};
+
+type User = {
+  login: string;
+  untrusted?: boolean;
+  message?: string;
+};
+
+export const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
+  const untrustedCommits = analyzeCommits(pr, input);
+  const approvals = analyzeReviews(pr, input, untrustedCommits.committers);
+  const author = {
+    login: pr.repository.pullRequest.author.login,
+    untrusted: checkIfUserRequiresTwoApprovals(
+      pr.repository.pullRequest.author,
+      input,
+    ),
+  };
+
+  const result: Result = {
+    headSHA: pr.repository.pullRequest.headRefOid,
+    trustedApprovals: approvals.trusted,
+    ignoredApprovals: approvals.ignored,
+    untrustedCommits: untrustedCommits.untrusted,
+    twoApprovalsAreRequired:
+      untrustedCommits.untrusted.length > 0 || author.untrusted,
+    author: author,
+    valid: true,
+  };
+
+  if (approvals.trusted.length === 0) {
+    result.valid = false;
+    result.message = "At least one approval is required";
+  }
+  if (approvals.trusted.length === 1 && result.twoApprovalsAreRequired) {
+    result.valid = false;
+    result.message = "At least two approvals are required";
+  }
+
+  return result;
+};
+
+type Approvals = {
+  trusted: Approval[];
+  ignored: Approval[];
+};
+
+const analyzeCommit = (
+  pr: type.PullRequest,
+  input: lib.Input,
+  commit: type.Commit,
+  committer: type.User | undefined,
+): Commit | undefined => {
+  if (committer === undefined) {
+    return {
+      sha: commit.oid,
+      message: "a commit isn't linked to any GitHub user",
+    };
+  }
+  return validateCommitter(commit, committer, input);
+};
+
+const getCommitter = (commit: type.Commit): type.User | undefined => {
+  if (commit.committer.user === null || commit.committer.user.login === "") {
+    if (commit.author.user === null || commit.author.user.login === "") {
+      return undefined;
+    }
+    return commit.author.user;
+  }
+  return commit.committer.user;
+};
+
+type Commits = {
+  untrusted: Commit[];
+  committers: Set<string>;
+};
+
+const analyzeCommits = (pr: type.PullRequest, input: lib.Input): Commits => {
+  const commits: Commits = {
+    untrusted: [],
+    committers: new Set(),
+  };
+  for (const commit of pr.repository.pullRequest.commits.nodes) {
+    const committer = getCommitter(commit.commit);
+    if (committer !== undefined) {
+      commits.committers.add(committer.login);
+    }
+    const result = analyzeCommit(pr, input, commit.commit, committer);
+    if (result !== undefined) {
+      commits.untrusted.push(result);
+    }
+  }
+  return commits;
+};
+
+export const analyzeReviews = (
+  pr: type.PullRequest,
+  input: lib.Input,
+  committers: Set<string>,
+): Approvals => {
+  const approvals: Approvals = {
+    trusted: [],
+    ignored: [],
+  };
+  for (const review of extractApproved(
+    excludeOldReviews(
       pr.repository.pullRequest.reviews.nodes,
       pr.repository.pullRequest.headRefOid,
     ),
-    input.untrustedMachineUsers,
-  );
-  if (reviews.length > 1) {
-    // Allow multiple approvals
-    return;
-  }
-  if (reviews.length === 0) {
-    // Approval is required
-    core.setFailed("Approval is required");
-    return;
-  }
-
-  const requiredTwoApprovals = checkIfTwoApprovalsRequired(pr, input);
-  if (requiredTwoApprovals) {
-    if (reviews.length === 1) {
-      core.setFailed("Two approvals are required");
-      return;
+  )) {
+    if (isApp(review.author)) {
+      approvals.ignored.push({
+        user: {
+          login: review.author.login,
+        },
+        message: "approval from app is ignored",
+      });
+      continue;
     }
+    if (input.untrustedMachineUsers.has(review.author.login)) {
+      approvals.ignored.push({
+        user: {
+          login: review.author.login,
+        },
+        message: "approval from untrusted machine user is ignored",
+      });
+      continue;
+    }
+    if (committers.has(review.author.login)) {
+      approvals.ignored.push({
+        user: {
+          login: review.author.login,
+        },
+        message: "approval from committer is ignored",
+      });
+      continue;
+    }
+    approvals.trusted.push({
+      user: {
+        login: review.author.login,
+      },
+    });
   }
-
-  const committers = getCommitters(pr.repository.pullRequest.commits.nodes);
-  validate(reviews, committers, requiredTwoApprovals);
+  return approvals;
 };
 
-const ignoreUntrustedReviews = (
-  reviews: type.Review[],
-  untrustedUsers: Set<string>,
-): type.Review[] => {
-  // Ignore approvals from untrusted users
-  return reviews.filter((review) => !untrustedUsers.has(review.author.login));
+const validateCommitter = (
+  commit: type.Commit,
+  user: type.User,
+  input: lib.Input,
+): Commit | undefined => {
+  if (isApp(user)) {
+    return input.trustedApps.has(user.resourcePath)
+      ? undefined
+      : {
+          sha: commit.oid,
+          committer: {
+            login: user.login,
+            untrusted: true,
+            message: "untrusted app",
+          },
+          message: "the committer is an untrusted app",
+        };
+  }
+  return input.untrustedMachineUsers.has(user.login)
+    ? {
+        sha: commit.oid,
+        committer: {
+          login: user.login,
+          untrusted: true,
+          message: "untrusted machine user",
+        },
+        message: "the committer is an untrusted machine user",
+      }
+    : undefined;
 };
 
-const isApp = (user: type.User): boolean => {
-  return user.resourcePath.startsWith("/apps/") || user.login.endsWith("[bot]");
-};
+const isApp = (user: type.User): boolean =>
+  user.resourcePath.startsWith("/apps/");
 
-const filterReviews = (
+const extractApproved = (reviews: type.Review[]): type.Review[] =>
+  reviews.filter((review) => review.state === "APPROVED");
+
+const excludeOldReviews = (
   reviews: type.Review[],
   headRefOid: string,
-): type.Review[] => {
-  return reviews.filter((review) => {
-    if (review.state !== "APPROVED" || review.commit.oid !== headRefOid) {
-      // Ignore reviews other than APPROVED
-      // Ignore reviews for non head commits
-      return false;
-    }
-    if (isApp(review.author)) {
-      // Ignore approvals from bots
-      return false;
-    }
-    return true;
-  });
-};
+): type.Review[] =>
+  reviews.filter((review) => review.commit.oid === headRefOid);
 
 // checkIfUserRequiresTwoApprovals checks if the user requires two approvals.
 // It returns true if the user is an untrusted app or machine user.
@@ -119,67 +302,8 @@ const checkIfUserRequiresTwoApprovals = (
   }
   if (isApp(user)) {
     // Require two approvals for PRs created by trusted apps, excluding trusted apps
-    return !input.trustedApps.has(user.login);
+    return !input.trustedApps.has(user.resourcePath);
   }
   // Require two approvals for PRs created by untrusted machine users
   return input.untrustedMachineUsers.has(user.login);
-};
-
-const checkIfTwoApprovalsRequired = (
-  pr: type.PullRequest,
-  input: lib.Input,
-): boolean => {
-  if (
-    checkIfUserRequiresTwoApprovals(pr.repository.pullRequest.author, input)
-  ) {
-    return true;
-  }
-  // If the pull request has commits from untrusted apps or machine users, require two approvals
-  for (const commit of pr.repository.pullRequest.commits.nodes) {
-    const user = commit.commit.author.user;
-    if (checkIfUserRequiresTwoApprovals(user, input)) {
-      return true;
-    }
-  }
-  return false;
-};
-
-const getUserFromCommit = (commit: type.Commit): type.User | null => {
-  return commit.committer.user ?? commit.author.user;
-};
-
-const getCommitters = (commits: type.PullRequestCommit[]): Set<string> => {
-  const committers = new Set<string>();
-  for (const commit of commits) {
-    const user = getUserFromCommit(commit.commit);
-    if (user === null || user.login === "") {
-      continue;
-    }
-    committers.add(user.login);
-  }
-  return committers;
-};
-
-const validate = (
-  reviews: type.Review[],
-  committers: Set<string>,
-  requiredTwoApprovals: boolean,
-) => {
-  let oneApproval = false;
-  for (const review of reviews) {
-    // TODO check CODEOWNERS
-    if (committers.has(review.author.login)) {
-      // self-approve
-      continue;
-    }
-    if (!requiredTwoApprovals || oneApproval) {
-      // Someone other than committers approved the PR, so this PR is not self-approved.
-      return;
-    }
-    oneApproval = true;
-  }
-  if (oneApproval) {
-    throw new Error("Two approvals are required");
-  }
-  throw new Error("Approval is required");
 };

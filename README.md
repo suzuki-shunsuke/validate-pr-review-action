@@ -51,8 +51,8 @@ You can specify lists of trusted GitHub Apps and untrusted machine users.
 uses: suzuki-shunsuke/validate-pr-review-action@latest
 with:
   trusted_apps: |
-    renovate[bot]
-    dependabot[bot]
+    renovate
+    dependabot
   untrusted_machine_users: |
     suzuki-shunsuke-bot
     suzuki-shunsuke-2-bot
@@ -67,7 +67,7 @@ Whether a GitHub App is considered trusted or a user is considered an untrusted 
 For example, if a GitHub App is installed across all repositories in an organization and granted `contents:write` and `pull_requests:write` permissions, and if its App ID and private key are shared across all repositories via GitHub Organization Variables and Secrets, that App cannot be trusted.
 Any organization member can exploit the App to create pull requests, make commits, or approve changes from any branch in any repository.
 
-By default, only `renovate[bot]` and `dependabot[bot]` are treated as trusted GitHub Apps.
+By default, only `renovate` and `dependabot` are treated as trusted GitHub Apps.
 All others are considered untrusted unless explicitly specified.
 
 ### Steps to secure GitHub Apps and Machine Users

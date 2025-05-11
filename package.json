@@ -1,7 +1,8 @@
 {
   "scripts": {
     "build": "ncc build src/main.ts --license LICENSE",
-    "fmt": "prettier --write ."
+    "fmt": "prettier --write .",
+    "test": "vitest --run"
   },
   "dependencies": {
     "@actions/core": "1.11.1",
@@ -15,6 +16,7 @@
     "@types/node": "20.17.46",
     "@vercel/ncc": "0.38.3",
     "prettier": "3.5.3",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "vitest": "^3.1.3"
   }
 }

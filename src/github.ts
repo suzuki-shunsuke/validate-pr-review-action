@@ -39,6 +39,7 @@ export const getPullRequest = async (input: lib.Input): Promise<any> => {
         }
         nodes {
           commit {
+            oid
             committer {
               user {
                 login
