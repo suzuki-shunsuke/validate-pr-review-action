@@ -34,7 +34,10 @@ const pageInfo = {
   endCursor: "",
 };
 
-const getInput = (trustedApps: string[], untrustedMachineUsers: string[]): lib.Input => ({
+const getInput = (
+  trustedApps: string[],
+  untrustedMachineUsers: string[],
+): lib.Input => ({
   githubToken: "",
   repositoryOwner: "suzuki-shunsuke",
   repositoryName: "validate-pr-review-action",
