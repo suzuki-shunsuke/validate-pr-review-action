@@ -1,6 +1,6 @@
 # validate-pr-review-action
 
-[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/suzuki-shunsuke/validate-pr-review-action/main/LICENSE) | [Troubleshooting](docs/trouble-shooting.md)
+[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/suzuki-shunsuke/validate-pr-review-action/main/LICENSE) | [action.yaml](action.yaml) | [Troubleshooting](docs/trouble-shooting.md)
 
 `validate-pr-review-action` is a GitHub Action to validate pull request reviews.
 It makes GitHub Actions secure.
@@ -36,6 +36,30 @@ In the following cases, two or more approvals are required:
 - If any of the commits were made by an **untrusted** machine user or a GitHub App (excluding a few **trusted** ones)
 - If the pull request was created by an untrusted machine user or GitHub App (excluding a few trusted ones)
 - If there are commits without a linked GitHub user
+
+## Usage
+
+```yaml
+name: Validate pull request reviews
+on:
+  pull_request_review:
+    types:
+      - submitted
+      - dismissed
+jobs:
+  validate-pr-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read # To get pull requests
+      contents: read # To get pull request commits
+    steps:
+      - uses: suzuki-shunsuke/validate-pr-review-action@latest
+```
+
+## Action's Inputs / Outputs
+
+Please see [action.yaml](action.yaml)
 
 ## Enforce Commit Signing by Branch Rulesets
 

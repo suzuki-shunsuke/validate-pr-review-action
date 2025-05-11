@@ -40,7 +40,7 @@ inputs:
     description: |
       The pull request number.
     required: false
-    default: ${{ github.event.number }}
+    default: ${{ github.event.pull_request.number }}
   # post_comment:
   #   description: |
   #     Whether to post a comment on the pull request.
