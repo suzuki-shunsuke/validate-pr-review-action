@@ -5,26 +5,20 @@ import * as type from "./type";
 
 const latestSHA = "1234567890abcdef1234567890abcdef12345678";
 const oldSHA = "0000000000000000000000000000000000000000";
-const octocat = {
-  login: "octocat",
-  resourcePath: "/octocat",
-};
-const suzuki = {
-  login: "suzuki-shunsuke",
-  resourcePath: "/suzuki-shunsuke",
-};
-const renovate = {
-  login: "renovate",
-  resourcePath: "/apps/renovate",
-};
-const suzukiBot = {
-  login: "suzuki-shunsuke-bot",
-  resourcePath: "/suzuki-shunsuke-bot",
-};
-const untrustedApp = {
-  login: "suzuki-shunsuke-app",
-  resourcePath: "/apps/suzuki-shunsuke-app",
-};
+const user = (user: string): type.User => ({
+  login: user,
+  resourcePath: `/${user}`,
+});
+const octocat = user("octocat");
+const suzuki = user("suzuki-shunsuke");
+const suzuki2 = user("suzuki-shunsuke-2");
+const suzukiBot = user("suzuki-shunsuke-bot");
+const app = (app: string): type.User => ({
+  login: app,
+  resourcePath: `/apps/${app}`,
+});
+const renovate = app("renovate");
+const untrustedApp = app("suzuki-shunsuke-app");
 const pageInfo = {
   hasNextPage: false,
   endCursor: "",
@@ -100,19 +94,26 @@ const reviews = (reviews: type.Review[]) => {
   };
 };
 
-const latestApprovalFromSuzuki = {
+const latestApproval = (user: type.User) => ({
   state: "APPROVED",
   commit: {
     oid: latestSHA,
   },
-  author: suzuki,
-};
+  author: user,
+});
 
-const trustedApprovalFromSuzuki = {
+const latestApprovalFromSuzuki = latestApproval(suzuki);
+const latestApprovalFromSuzuki2 = latestApproval(suzuki2);
+
+const trustedApproval = (user: string) => ({
   user: {
-    login: "suzuki-shunsuke",
+    login: user,
   },
-};
+});
+
+const trustedApprovalFromSuzuki = trustedApproval("suzuki-shunsuke");
+const trustedApprovalFromSuzuki2 = trustedApproval("suzuki-shunsuke-2");
+const trustedApprovalFromOctocat = trustedApproval("octocat");
 
 const authors = {
   octocat: {
@@ -234,6 +235,38 @@ test("analyze - pr author is an untrusted machine user", () => {
   });
 });
 
+test("analyze - pr author is an untrusted machine user (2 approvals)", () => {
+  expect(
+    run.analyze(
+      {
+        repository: {
+          pullRequest: {
+            headRefOid: latestSHA,
+            author: suzukiBot, // untrusted machine user
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([
+              latestApprovalFromSuzuki,
+              latestApprovalFromSuzuki2,
+            ]),
+          },
+        },
+      },
+      getInput(["/apps/renovate", "/apps/dependabot"], ["suzuki-shunsuke-bot"]),
+    ),
+  ).toStrictEqual({
+    headSHA: latestSHA,
+    author: {
+      login: "suzuki-shunsuke-bot",
+      untrusted: true,
+    },
+    trustedApprovals: [trustedApprovalFromSuzuki, trustedApprovalFromSuzuki2],
+    ignoredApprovals: [],
+    untrustedCommits: [],
+    twoApprovalsAreRequired: true,
+    valid: true,
+  });
+});
+
 test("analyze - pr author is an untrusted app", () => {
   expect(
     run.analyze(
@@ -284,13 +317,7 @@ test("analyze - filter reviews", () => {
                   resourcePath: "/suzuki-shunsuke-2",
                 },
               },
-              {
-                state: "APPROVED",
-                commit: {
-                  oid: latestSHA,
-                },
-                author: suzuki, // ignore approvals from committers
-              },
+              latestApprovalFromSuzuki, // ignore approvals from committers
               {
                 state: "COMMENT", // ignore other than APPROVED
                 commit: {
@@ -298,20 +325,8 @@ test("analyze - filter reviews", () => {
                 },
                 author: suzuki,
               },
-              {
-                state: "APPROVED",
-                commit: {
-                  oid: latestSHA,
-                },
-                author: untrustedApp, // ignore approvals from apps
-              },
-              {
-                state: "APPROVED",
-                commit: {
-                  oid: latestSHA,
-                },
-                author: suzukiBot, // ignore approvals from untrusted machine users
-              },
+              latestApproval(untrustedApp), // ignore approvals from apps
+              latestApproval(suzukiBot), // ignore approvals from untrusted machine users
             ]),
           },
         },
