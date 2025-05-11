@@ -8,14 +8,15 @@ inputs:
   # Optional
   trusted_apps:
     description: |
-      Trusted apps.
+      Logins of Trusted apps.
+      Each line must not end with "[bot]", and must not contain "/".
     required: false
     default: |
       renovate
       dependabot
   untrusted_machine_users:
     description: |
-      Untrusted Machine Users.
+      Logins of untrusted Machine Users.
     required: false
   github_token:
     description: |
