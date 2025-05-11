@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import * as run from "./run";
 import * as lib from "./lib";
-import { get } from "http";
+import * as type from "./type";
 
 const latestSHA = "1234567890abcdef1234567890abcdef12345678";
 const oldSHA = "0000000000000000000000000000000000000000";
@@ -60,6 +60,44 @@ const suzukiLatestCommit = {
   author: {
     user: suzuki,
   },
+}
+
+const renovateLatestCommit = {
+  oid: latestSHA,
+  committer: {
+    user: null,
+  },
+  author: {
+    user: renovate,
+  },
+};
+
+const notLinkedLatestCommit = {
+  oid: latestSHA,
+  committer: {
+    user: null,
+  },
+  author: {
+    user: null,
+  },
+};
+
+const commits = (commits: type.Commit[]) => {
+  return {
+    totalCount: commits.length,
+    pageInfo: pageInfo,
+    nodes: commits.map(commit => ({
+      commit: commit,
+    })),
+  };
+};
+
+const reviews = (reviews: type.Review[]) => {
+  return {
+    totalCount: commits.length,
+    pageInfo: pageInfo,
+    nodes: reviews,
+  };
 };
 
 test("analyze - normal", () => {
@@ -70,31 +108,14 @@ test("analyze - normal", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: octocat,
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: octocatLatestCommit,
-                },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([{
+              state: "APPROVED",
+              commit: {
+                oid: latestSHA,
               },
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+              author: suzuki,
+            }]),
           },
         },
       },
@@ -128,39 +149,14 @@ test("analyze - pr author is a trusted app", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: renovate, // trusted app
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: null,
-                    },
-                    author: {
-                      user: renovate,
-                    },
-                  },
-                },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
+            commits: commits([renovateLatestCommit]),
+            reviews: reviews([{
+              state: "APPROVED",
+              commit: {
+                oid: latestSHA,
               },
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+              author: suzuki,
+            }]),
           },
         },
       },
@@ -194,39 +190,15 @@ test("analyze - pr author is an untrusted machine user", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: suzukiBot, // untrusted machine user
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: null,
-                    },
-                    author: {
-                      user: octocat,
-                    },
-                  },
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
                 },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: {
-                hasNextPage: false,
-                endCursor: "",
-              },
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+                author: suzuki,
+              }]),
           },
         },
       },
@@ -261,39 +233,16 @@ test("analyze - pr author is an untrusted app", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: untrustedApp, // untrusted app
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: null,
-                    },
-                    author: {
-                      user: {
-                        login: "suzuki-shunsuke-2",
-                        resourcePath: "/suzuki-shunsuke-2",
-                      },
-                    },
-                  },
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
                 },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+                author: suzuki,
+              },
+            ]),
           },
         },
       },
@@ -328,62 +277,47 @@ test("analyze - filter reviews", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: octocat,
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: octocatLatestCommit,
+            commits: commits([octocatLatestCommit, suzukiLatestCommit]),
+            reviews: reviews([
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: oldSHA, // ignore old approvals
                 },
-                {
-                  commit: suzukiLatestCommit,
+                author: {
+                  login: "suzuki-shunsuke-2",
+                  resourcePath: "/suzuki-shunsuke-2",
                 },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: oldSHA, // ignore old approvals
-                  },
-                  author: {
-                    login: "suzuki-shunsuke-2",
-                    resourcePath: "/suzuki-shunsuke-2",
-                  },
+              },
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
                 },
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki, // ignore approvals from committers
+                author: suzuki, // ignore approvals from committers
+              },
+              {
+                state: "COMMENT", // ignore other than APPROVED
+                commit: {
+                  oid: latestSHA,
                 },
-                {
-                  state: "COMMENT", // ignore other than APPROVED
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
+                author: suzuki,
+              },
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
                 },
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: untrustedApp, // ignore approvals from apps
+                author: untrustedApp, // ignore approvals from apps
+              },
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
                 },
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzukiBot, // ignore approvals from untrusted machine users
-                },
-              ],
-            },
+                author: suzukiBot, // ignore approvals from untrusted machine users
+              },
+            ]),
           },
         },
       },
@@ -431,48 +365,16 @@ test("analyze - not linked user", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: octocat,
-            commits: {
-              totalCount: 2,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: octocat,
-                    },
-                    author: {
-                      user: octocat,
-                    },
-                  },
+            commits: commits([octocatLatestCommit, notLinkedLatestCommit]),
+            reviews: reviews([
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
                 },
-                {
-                  commit: {
-                    // not linked to any GitHub user
-                    oid: latestSHA,
-                    committer: {
-                      user: null,
-                    },
-                    author: {
-                      user: null,
-                    },
-                  },
-                },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+                author: suzuki,
+              },
+            ]),
           },
         },
       },
@@ -512,36 +414,16 @@ test("analyzeReviews - normal", () => {
           pullRequest: {
             headRefOid: latestSHA,
             author: octocat,
-            commits: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  commit: {
-                    oid: latestSHA,
-                    committer: {
-                      user: octocat,
-                    },
-                    author: {
-                      user: octocat,
-                    },
-                  },
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
                 },
-              ],
-            },
-            reviews: {
-              totalCount: 1,
-              pageInfo: pageInfo,
-              nodes: [
-                {
-                  state: "APPROVED",
-                  commit: {
-                    oid: latestSHA,
-                  },
-                  author: suzuki,
-                },
-              ],
-            },
+                author: suzuki,
+              },
+            ]),
           },
         },
       },
