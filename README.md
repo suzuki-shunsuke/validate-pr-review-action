@@ -106,17 +106,6 @@ Any organization member can exploit the App to create pull requests, make commit
 By default, only `renovate` and `dependabot` are treated as trusted GitHub Apps.
 All others are considered untrusted unless explicitly specified.
 
-### Steps to secure GitHub Apps and Machine Users
-
-In many organizations, machine users and GitHub Apps are often not properly managed securely.
-To address this, consider following these steps:
-
-1. Create new machine users and GitHub Apps.
-1. Apply strict access controls to these newly created accounts.
-1. Gradually replace existing machine users and GitHub Apps with the newly secured ones.
-1. Minimize permissions for any existing accounts that remain in use.
-1. Decommission unused or insecure accounts.
-
 ### Client/Server Model Actions
 
 Client/Server Model Actions allow you to manage GitHub Apps and Machine Users securely.
