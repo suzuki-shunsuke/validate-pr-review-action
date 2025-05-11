@@ -151,6 +151,33 @@ test("analyze - normal", () => {
   });
 });
 
+test("analyze - at least one approval is required", () => {
+  expect(
+    run.analyze(
+      {
+        repository: {
+          pullRequest: {
+            headRefOid: latestSHA,
+            author: octocat,
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([]),
+          },
+        },
+      },
+      getInput(["/apps/renovate", "/apps/dependabot"], []),
+    ),
+  ).toStrictEqual({
+    headSHA: latestSHA,
+    author: authors.octocat,
+    trustedApprovals: [],
+    ignoredApprovals: [],
+    untrustedCommits: [],
+    twoApprovalsAreRequired: false,
+    message: "At least one approval is required",
+    valid: false,
+  });
+});
+
 test("analyze - pr author is a trusted app", () => {
   expect(
     run.analyze(
