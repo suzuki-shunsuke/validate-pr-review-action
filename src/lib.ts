@@ -10,6 +10,7 @@ export type Input = {
   trustedMachineUsers: Set<string>;
   untrustedMachineUsers: Set<string>;
   untrustedMachineUserRegexps: RegExp[];
+  minimumApprovals: number;
   // postComment: boolean;
 };
 
@@ -21,4 +22,5 @@ export type RawInput = {
   trustedApps: string[];
   trustedMachineUsers: string[];
   untrustedMachineUsers: string[];
+  minimumApprovals: string;
 };

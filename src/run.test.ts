@@ -40,6 +40,7 @@ const getInput = (
   untrustedMachineUserRegexps: untrustedMachineUserRegexps.map(
     (r) => new RegExp(r),
   ),
+  minimumApprovals: 1,
 });
 
 const octocatLatestCommit = {
@@ -153,12 +154,12 @@ test("analyze - normal", () => {
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
-    twoApprovalsAreRequired: false,
+    minimumApprovals: 1,
     valid: true,
   });
 });
 
-test("analyze - at least one approval is required", () => {
+test("analyze - at least 1 approval is required", () => {
   expect(
     run.analyze(
       {
@@ -179,8 +180,8 @@ test("analyze - at least one approval is required", () => {
     trustedApprovals: [],
     ignoredApprovals: [],
     untrustedCommits: [],
-    twoApprovalsAreRequired: false,
-    message: "At least one approval is required",
+    minimumApprovals: 1,
+    message: "At least 1 approval is required",
     valid: false,
   });
 });
@@ -206,7 +207,7 @@ test("analyze - pr author is a trusted app", () => {
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
-    twoApprovalsAreRequired: false,
+    minimumApprovals: 1,
     valid: true,
   });
 });
@@ -235,9 +236,9 @@ test("analyze - pr author is an untrusted machine user", () => {
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
-    twoApprovalsAreRequired: true,
+    minimumApprovals: 2,
     valid: false,
-    message: "At least two approvals are required",
+    message: "At least 2 approvals are required",
   });
 });
 
@@ -265,9 +266,9 @@ test("analyze - pr author is an untrusted machine user (regexp)", () => {
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
-    twoApprovalsAreRequired: true,
+    minimumApprovals: 2,
     valid: false,
-    message: "At least two approvals are required",
+    message: "At least 2 approvals are required",
   });
 });
 
@@ -300,7 +301,7 @@ test("analyze - trusted_machine_users", () => {
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
-    twoApprovalsAreRequired: false,
+    minimumApprovals: 1,
     valid: true,
   });
 });
@@ -332,7 +333,7 @@ test("analyze - pr author is an untrusted machine user (2 approvals)", () => {
     trustedApprovals: [trustedApprovalFromSuzuki, trustedApprovalFromSuzuki2],
     ignoredApprovals: [],
     untrustedCommits: [],
-    twoApprovalsAreRequired: true,
+    minimumApprovals: 2,
     valid: true,
   });
 });
@@ -361,9 +362,9 @@ test("analyze - pr author is an untrusted app", () => {
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
-    twoApprovalsAreRequired: true,
+    minimumApprovals: 2,
     valid: false,
-    message: "At least two approvals are required",
+    message: "At least 2 approvals are required",
   });
 });
 
@@ -428,9 +429,9 @@ test("analyze - filter reviews", () => {
       },
     ],
     untrustedCommits: [],
-    twoApprovalsAreRequired: false,
+    minimumApprovals: 1,
     valid: false,
-    message: "At least one approval is required",
+    message: "At least 1 approval is required",
   });
 });
 
@@ -460,9 +461,9 @@ test("analyze - not linked user", () => {
         message: "a commit isn't linked to any GitHub user",
       },
     ],
-    twoApprovalsAreRequired: true,
+    minimumApprovals: 2,
     valid: false,
-    message: "At least two approvals are required",
+    message: "At least 2 approvals are required",
   });
 });
 

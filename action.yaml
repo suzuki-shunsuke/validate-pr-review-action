@@ -61,6 +61,11 @@ inputs:
       The pull request number.
     required: false
     default: ${{ github.event.pull_request.number }}
+  minimum_approvals:
+    description: |
+      The minimum number of approvals required to merge the pull request.
+    required: false
+    default: "1"
   # post_comment:
   #   description: |
   #     Whether to post a comment on the pull request.
