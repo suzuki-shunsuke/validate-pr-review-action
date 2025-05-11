@@ -10,6 +10,7 @@ export const main = async () => {
       repositoryOwner: core.getInput("repository_owner"),
       repositoryName: core.getInput("repository_name"),
       pullRequestNumber: core.getInput("pull_request_number"),
+      minimumApprovals: core.getInput("minium_approvals"),
       trustedApps: core.getMultilineInput("trusted_apps"),
       trustedMachineUsers: core.getMultilineInput("trusted_machine_users"),
       untrustedMachineUsers: core.getMultilineInput("untrusted_machine_users"),
@@ -50,6 +51,7 @@ const parseInput = (rawInput: lib.RawInput): lib.Input => {
     repositoryOwner: rawInput.repositoryOwner,
     repositoryName: rawInput.repositoryName,
     pullRequestNumber: parseInt(rawInput.pullRequestNumber, 10),
+    minimumApprovals: parseInt(rawInput.minimumApprovals, 10),
   };
 };
 
@@ -73,6 +75,9 @@ const listReviews = async (input: lib.Input): Promise<type.Review[]> => {
   return pr.repository.pullRequest.reviews.nodes;
 };
 
+const docURL =
+  "https://github.com/suzuki-shunsuke/validate-pr-review-action/blob/main/README.md";
+
 const run = async (input: lib.Input) => {
   core.info(
     JSON.stringify(
@@ -86,11 +91,18 @@ const run = async (input: lib.Input) => {
         repositoryOwner: input.repositoryOwner,
         repositoryName: input.repositoryName,
         pullRequestNumber: input.pullRequestNumber,
+        miniumApprovals: input.minimumApprovals,
       },
       null,
       2,
     ),
   );
+  if (input.minimumApprovals < 1) {
+    core.setFailed(
+      "minium_approvals must be greater than or equal to 1: " + docURL,
+    );
+    return;
+  }
   // Get a pull request reviews and committers via GraphQL API
   const pr = await getPullRequest(input);
   if (pr.repository.pullRequest.commits.pageInfo.hasNextPage) {
@@ -103,9 +115,7 @@ const run = async (input: lib.Input) => {
   const result = analyze(pr, input);
   core.info(JSON.stringify(result, null, 2));
   if (!result.valid) {
-    core.setFailed(
-      `${result.message ?? "Validation failed"}: https://github.com/suzuki-shunsuke/validate-pr-review-action/blob/main/README.md`,
-    );
+    core.setFailed(`${result.message ?? "Validation failed"}: ${docURL}`);
   }
 };
 
@@ -115,7 +125,7 @@ type Result = {
   trustedApprovals: Approval[];
   ignoredApprovals: Approval[];
   untrustedCommits: Commit[];
-  twoApprovalsAreRequired: boolean;
+  minimumApprovals: number;
   valid: boolean;
   message?: string;
 };
@@ -154,19 +164,21 @@ export const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
     trustedApprovals: approvals.trusted,
     ignoredApprovals: approvals.ignored,
     untrustedCommits: untrustedCommits.untrusted,
-    twoApprovalsAreRequired:
-      untrustedCommits.untrusted.length > 0 || author.untrusted,
+    minimumApprovals: input.minimumApprovals,
     author: author,
     valid: true,
   };
 
-  if (approvals.trusted.length === 0) {
-    result.valid = false;
-    result.message = "At least one approval is required";
+  if (untrustedCommits.untrusted.length > 0 || author.untrusted) {
+    result.minimumApprovals++;
   }
-  if (approvals.trusted.length === 1 && result.twoApprovalsAreRequired) {
+
+  if (approvals.trusted.length < result.minimumApprovals) {
     result.valid = false;
-    result.message = "At least two approvals are required";
+    result.message =
+      result.minimumApprovals === 1
+        ? `At least 1 approval is required`
+        : `At least ${result.minimumApprovals} approvals are required`;
   }
 
   return result;
