@@ -164,11 +164,13 @@ export const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
     valid: true,
   };
 
-  if (approvals.trusted.length === 0) {
+  const numOfApprovals =
+    result.trustedApprovals.length + result.approvalsFromCommitters.length;
+  if (numOfApprovals === 0) {
     result.valid = false;
     result.message = "At least one approval is required";
   }
-  if (approvals.trusted.length === 1 && result.twoApprovalsAreRequired) {
+  if (numOfApprovals === 1 && result.twoApprovalsAreRequired) {
     result.valid = false;
     result.message = "At least two approvals are required";
   }
