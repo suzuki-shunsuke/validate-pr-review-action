@@ -440,7 +440,7 @@ test("analyze - filter reviews", () => {
     untrustedCommits: [],
     twoApprovalsAreRequired: true,
     valid: false,
-    message: "At least one approval is required",
+    message: "At least two approvals are required",
   });
 });
 
