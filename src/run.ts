@@ -166,13 +166,14 @@ export const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
 
   const numOfApprovals =
     result.trustedApprovals.length + result.approvalsFromCommitters.length;
+  if (numOfApprovals < 2 && result.twoApprovalsAreRequired) {
+    result.valid = false;
+    result.message = "At least two approvals are required";
+    return result;
+  }
   if (numOfApprovals === 0) {
     result.valid = false;
     result.message = "At least one approval is required";
-  }
-  if (numOfApprovals === 1 && result.twoApprovalsAreRequired) {
-    result.valid = false;
-    result.message = "At least two approvals are required";
   }
 
   return result;
