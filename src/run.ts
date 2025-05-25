@@ -157,7 +157,9 @@ export const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
     approvalsFromCommitters: approvals.approvalsFromCommitters,
     untrustedCommits: untrustedCommits.untrusted,
     twoApprovalsAreRequired:
-      untrustedCommits.untrusted.length > 0 || author.untrusted || approvals.approvalsFromCommitters.length > 0,
+      untrustedCommits.untrusted.length > 0 ||
+      author.untrusted ||
+      approvals.approvalsFromCommitters.length > 0,
     author: author,
     valid: true,
   };
@@ -307,25 +309,25 @@ const validateCommitter = (
     return input.trustedApps.has(user.resourcePath)
       ? undefined
       : {
+          sha: commit.oid,
+          committer: {
+            login: user.login,
+            untrusted: true,
+            message: "untrusted app",
+          },
+          message: "the committer is an untrusted app",
+        };
+  }
+  return matchUntrustedMachineUser(user.login, input)
+    ? {
         sha: commit.oid,
         committer: {
           login: user.login,
           untrusted: true,
-          message: "untrusted app",
+          message: "untrusted machine user",
         },
-        message: "the committer is an untrusted app",
-      };
-  }
-  return matchUntrustedMachineUser(user.login, input)
-    ? {
-      sha: commit.oid,
-      committer: {
-        login: user.login,
-        untrusted: true,
-        message: "untrusted machine user",
-      },
-      message: "the committer is an untrusted machine user",
-    }
+        message: "the committer is an untrusted machine user",
+      }
     : undefined;
 };
 
