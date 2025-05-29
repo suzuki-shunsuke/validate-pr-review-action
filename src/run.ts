@@ -114,6 +114,7 @@ type Result = {
   author: User;
   trustedApprovals: Approval[];
   ignoredApprovals: Approval[];
+  approvalsFromCommitters: Approval[];
   untrustedCommits: Commit[];
   twoApprovalsAreRequired: boolean;
   valid: boolean;
@@ -153,20 +154,26 @@ export const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
     headSHA: pr.repository.pullRequest.headRefOid,
     trustedApprovals: approvals.trusted,
     ignoredApprovals: approvals.ignored,
+    approvalsFromCommitters: approvals.approvalsFromCommitters,
     untrustedCommits: untrustedCommits.untrusted,
     twoApprovalsAreRequired:
-      untrustedCommits.untrusted.length > 0 || author.untrusted,
+      untrustedCommits.untrusted.length > 0 ||
+      author.untrusted ||
+      approvals.approvalsFromCommitters.length > 0,
     author: author,
     valid: true,
   };
 
-  if (approvals.trusted.length === 0) {
-    result.valid = false;
-    result.message = "At least one approval is required";
-  }
-  if (approvals.trusted.length === 1 && result.twoApprovalsAreRequired) {
+  const numOfApprovals =
+    result.trustedApprovals.length + result.approvalsFromCommitters.length;
+  if (numOfApprovals < 2 && result.twoApprovalsAreRequired) {
     result.valid = false;
     result.message = "At least two approvals are required";
+    return result;
+  }
+  if (numOfApprovals === 0) {
+    result.valid = false;
+    result.message = "At least one approval is required";
   }
 
   return result;
@@ -175,6 +182,7 @@ export const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
 type Approvals = {
   trusted: Approval[];
   ignored: Approval[];
+  approvalsFromCommitters: Approval[];
 };
 
 const analyzeCommit = (
@@ -251,6 +259,7 @@ export const analyzeReviews = (
   const approvals: Approvals = {
     trusted: [],
     ignored: [],
+    approvalsFromCommitters: [],
   };
   for (const review of extractApproved(
     excludeOldReviews(
@@ -277,11 +286,11 @@ export const analyzeReviews = (
       continue;
     }
     if (committers.has(review.author.login)) {
-      approvals.ignored.push({
+      approvals.approvalsFromCommitters.push({
         user: {
           login: review.author.login,
         },
-        message: "approval from committer is ignored",
+        message: "approval from committer requires two approvals",
       });
       continue;
     }

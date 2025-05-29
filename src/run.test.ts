@@ -152,6 +152,7 @@ test("analyze - normal", () => {
     author: authors.octocat,
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
+    approvalsFromCommitters: [],
     untrustedCommits: [],
     twoApprovalsAreRequired: false,
     valid: true,
@@ -179,6 +180,7 @@ test("analyze - at least one approval is required", () => {
     trustedApprovals: [],
     ignoredApprovals: [],
     untrustedCommits: [],
+    approvalsFromCommitters: [],
     twoApprovalsAreRequired: false,
     message: "At least one approval is required",
     valid: false,
@@ -206,6 +208,7 @@ test("analyze - pr author is a trusted app", () => {
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
+    approvalsFromCommitters: [],
     twoApprovalsAreRequired: false,
     valid: true,
   });
@@ -235,6 +238,7 @@ test("analyze - pr author is an untrusted machine user", () => {
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
+    approvalsFromCommitters: [],
     twoApprovalsAreRequired: true,
     valid: false,
     message: "At least two approvals are required",
@@ -265,6 +269,7 @@ test("analyze - pr author is an untrusted machine user (regexp)", () => {
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
+    approvalsFromCommitters: [],
     twoApprovalsAreRequired: true,
     valid: false,
     message: "At least two approvals are required",
@@ -300,6 +305,7 @@ test("analyze - trusted_machine_users", () => {
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
     untrustedCommits: [],
+    approvalsFromCommitters: [],
     twoApprovalsAreRequired: false,
     valid: true,
   });
@@ -332,6 +338,7 @@ test("analyze - pr author is an untrusted machine user (2 approvals)", () => {
     trustedApprovals: [trustedApprovalFromSuzuki, trustedApprovalFromSuzuki2],
     ignoredApprovals: [],
     untrustedCommits: [],
+    approvalsFromCommitters: [],
     twoApprovalsAreRequired: true,
     valid: true,
   });
@@ -360,6 +367,7 @@ test("analyze - pr author is an untrusted app", () => {
     },
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
+    approvalsFromCommitters: [],
     untrustedCommits: [],
     twoApprovalsAreRequired: true,
     valid: false,
@@ -409,12 +417,6 @@ test("analyze - filter reviews", () => {
     trustedApprovals: [],
     ignoredApprovals: [
       {
-        message: "approval from committer is ignored",
-        user: {
-          login: "suzuki-shunsuke",
-        },
-      },
-      {
         message: "approval from app is ignored",
         user: {
           login: "suzuki-shunsuke-app",
@@ -427,10 +429,18 @@ test("analyze - filter reviews", () => {
         },
       },
     ],
+    approvalsFromCommitters: [
+      {
+        message: "approval from committer requires two approvals",
+        user: {
+          login: "suzuki-shunsuke",
+        },
+      },
+    ],
     untrustedCommits: [],
-    twoApprovalsAreRequired: false,
+    twoApprovalsAreRequired: true,
     valid: false,
-    message: "At least one approval is required",
+    message: "At least two approvals are required",
   });
 });
 
@@ -454,6 +464,7 @@ test("analyze - not linked user", () => {
     author: authors.octocat,
     trustedApprovals: [trustedApprovalFromSuzuki],
     ignoredApprovals: [],
+    approvalsFromCommitters: [],
     untrustedCommits: [
       {
         sha: latestSHA,
@@ -484,6 +495,7 @@ test("analyzeReviews - normal", () => {
     ),
   ).toStrictEqual({
     trusted: [trustedApprovalFromSuzuki],
+    approvalsFromCommitters: [],
     ignored: [],
   });
 });

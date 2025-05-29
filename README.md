@@ -28,11 +28,12 @@ You can address these loopholes by running this action via `pull_request_review`
 
 This action performs the following validations:
 
-- The latest commit in the PR must be approved by someone who didn't contribute commits to the PR
+- The latest commit of the PR must be approved
 - Approvals from GitHub Apps or untrusted machine users are ignored
 
 In the following cases, two or more approvals are required:
 
+- Someone who contributed commits to the PR approves the latest commit of the PR
 - If any of the commits were made by an **untrusted** machine user or a GitHub App (excluding a few **trusted** ones)
 - If the pull request was created by an untrusted machine user or GitHub App (excluding a few trusted ones)
 - If there are commits without a linked GitHub user
