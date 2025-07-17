@@ -53,26 +53,6 @@ const parseInput = (rawInput: lib.RawInput): lib.Input => {
   };
 };
 
-const getPullRequest = async (input: lib.Input): Promise<type.PullRequest> => {
-  const result = await github.getPullRequest(input);
-  const pr = type.PullRequest.parse(result);
-  return pr;
-};
-
-const listCommits = async (
-  input: lib.Input,
-): Promise<type.PullRequestCommit[]> => {
-  const result = await github.listCommits(input);
-  const pr = type.PullRequest.parse(result);
-  return pr.repository.pullRequest.commits.nodes;
-};
-
-const listReviews = async (input: lib.Input): Promise<type.Review[]> => {
-  const result = await github.listReviews(input);
-  const pr = type.PullRequest.parse(result);
-  return pr.repository.pullRequest.reviews.nodes;
-};
-
 const run = async (input: lib.Input) => {
   core.info(
     JSON.stringify(
@@ -92,12 +72,12 @@ const run = async (input: lib.Input) => {
     ),
   );
   // Get a pull request reviews and committers via GraphQL API
-  const pr = await getPullRequest(input);
+  const pr = await github.getPullRequest(input);
   if (pr.repository.pullRequest.commits.pageInfo.hasNextPage) {
-    pr.repository.pullRequest.commits.nodes = await listCommits(input);
+    pr.repository.pullRequest.commits.nodes = pr.repository.pullRequest.commits.nodes.concat(await github.listCommits(input, pr.repository.pullRequest.commits.pageInfo.endCursor));
   }
   if (pr.repository.pullRequest.reviews.pageInfo.hasNextPage) {
-    pr.repository.pullRequest.reviews.nodes = await listReviews(input);
+    pr.repository.pullRequest.reviews.nodes = pr.repository.pullRequest.reviews.nodes.concat(await github.listReviews(input, pr.repository.pullRequest.reviews.pageInfo.endCursor));
   }
   core.info(JSON.stringify(pr, null, 2));
   const result = analyze(pr, input);

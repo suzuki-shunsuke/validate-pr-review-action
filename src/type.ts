@@ -31,27 +31,28 @@ const PullRequestCommit = z.object({
 });
 export type PullRequestCommit = z.infer<typeof PullRequestCommit>;
 
+export const PageInfo = z.object({
+  hasNextPage: z.boolean(),
+  endCursor: z.string(),
+});
+
+export const Reviews = z.object({
+  pageInfo: PageInfo,
+  nodes: z.array(Review),
+});
+
+export const Commits = z.object({
+  pageInfo: PageInfo,
+  nodes: z.array(PullRequestCommit),
+});
+
 export const PullRequest = z.object({
   repository: z.object({
     pullRequest: z.object({
       headRefOid: z.string(),
       author: User,
-      reviews: z.object({
-        totalCount: z.number(),
-        pageInfo: z.object({
-          hasNextPage: z.boolean(),
-          endCursor: z.string(),
-        }),
-        nodes: z.array(Review),
-      }),
-      commits: z.object({
-        totalCount: z.number(),
-        pageInfo: z.object({
-          hasNextPage: z.boolean(),
-          endCursor: z.string(),
-        }),
-        nodes: z.array(PullRequestCommit),
-      }),
+      reviews: Reviews,
+      commits: Commits,
     }),
   }),
 });
