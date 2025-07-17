@@ -84,7 +84,6 @@ const notLinkedLatestCommit = {
 
 const commits = (commits: type.Commit[]) => {
   return {
-    totalCount: commits.length,
     pageInfo: pageInfo,
     nodes: commits.map((commit) => ({
       commit: commit,
@@ -94,7 +93,6 @@ const commits = (commits: type.Commit[]) => {
 
 const reviews = (reviews: type.Review[]) => {
   return {
-    totalCount: commits.length,
     pageInfo: pageInfo,
     nodes: reviews,
   };

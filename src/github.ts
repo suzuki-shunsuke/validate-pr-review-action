@@ -19,7 +19,6 @@ export const getPullRequest = async (
         resourcePath
       }
       reviews(first: 100) {
-        totalCount
         pageInfo {
           hasNextPage
           endCursor
@@ -36,7 +35,6 @@ export const getPullRequest = async (
         }
       }
       commits(first: 100) {
-        totalCount
         pageInfo {
           hasNextPage
           endCursor
@@ -98,6 +96,7 @@ export const listCommits = async (
         }
         nodes {
           commit {
+            oid
             committer {
               user {
                 login
