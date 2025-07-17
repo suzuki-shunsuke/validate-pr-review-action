@@ -74,10 +74,22 @@ const run = async (input: lib.Input) => {
   // Get a pull request reviews and committers via GraphQL API
   const pr = await github.getPullRequest(input);
   if (pr.repository.pullRequest.commits.pageInfo.hasNextPage) {
-    pr.repository.pullRequest.commits.nodes = pr.repository.pullRequest.commits.nodes.concat(await github.listCommits(input, pr.repository.pullRequest.commits.pageInfo.endCursor));
+    pr.repository.pullRequest.commits.nodes =
+      pr.repository.pullRequest.commits.nodes.concat(
+        await github.listCommits(
+          input,
+          pr.repository.pullRequest.commits.pageInfo.endCursor,
+        ),
+      );
   }
   if (pr.repository.pullRequest.reviews.pageInfo.hasNextPage) {
-    pr.repository.pullRequest.reviews.nodes = pr.repository.pullRequest.reviews.nodes.concat(await github.listReviews(input, pr.repository.pullRequest.reviews.pageInfo.endCursor));
+    pr.repository.pullRequest.reviews.nodes =
+      pr.repository.pullRequest.reviews.nodes.concat(
+        await github.listReviews(
+          input,
+          pr.repository.pullRequest.reviews.pageInfo.endCursor,
+        ),
+      );
   }
   core.info(JSON.stringify(pr, null, 2));
   const result = analyze(pr, input);

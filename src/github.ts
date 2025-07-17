@@ -5,7 +5,9 @@ import { Octokit } from "@octokit/core";
 import { paginateGraphQL } from "@octokit/plugin-paginate-graphql";
 import { z } from "zod";
 
-export const getPullRequest = async (input: lib.Input): Promise<types.PullRequest> => {
+export const getPullRequest = async (
+  input: lib.Input,
+): Promise<types.PullRequest> => {
   const octokit = github.getOctokit(input.githubToken);
   const result = await octokit.graphql<any>(
     `query($owner: String!, $repo: String!, $pr: Int!) {
@@ -79,7 +81,10 @@ const QueryCommits = z.object({
 
 type QueryCommits = z.infer<typeof QueryCommits>;
 
-export const listCommits = async (input: lib.Input, cursor: string): Promise<types.PullRequestCommit[]> => {
+export const listCommits = async (
+  input: lib.Input,
+  cursor: string,
+): Promise<types.PullRequestCommit[]> => {
   const MyOctokit = Octokit.plugin(paginateGraphQL);
   const octokit = new MyOctokit({ auth: input.githubToken });
   const result = await octokit.graphql.paginate(
@@ -132,7 +137,10 @@ const QueryReviews = z.object({
 
 type QueryReviews = z.infer<typeof QueryReviews>;
 
-export const listReviews = async (input: lib.Input, cursor: string): Promise<types.Review[]> => {
+export const listReviews = async (
+  input: lib.Input,
+  cursor: string,
+): Promise<types.Review[]> => {
   const MyOctokit = Octokit.plugin(paginateGraphQL);
   const octokit = new MyOctokit({ auth: input.githubToken });
   const result = await octokit.graphql.paginate(
