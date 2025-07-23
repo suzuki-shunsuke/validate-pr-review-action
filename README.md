@@ -43,6 +43,8 @@ In the following cases, two or more approvals are required:
 ```yaml
 name: Validate pull request reviews
 on:
+  # If you use Merge Queue, add `merge_group`
+  # merge_group:
   pull_request_review:
     types:
       - submitted

@@ -33,7 +33,7 @@ export type PullRequestCommit = z.infer<typeof PullRequestCommit>;
 
 export const PageInfo = z.object({
   hasNextPage: z.boolean(),
-  endCursor: z.string(),
+  endCursor: z.nullable(z.string()),
 });
 
 export const Reviews = z.object({
