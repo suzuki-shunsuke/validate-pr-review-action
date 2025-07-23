@@ -27,7 +27,9 @@ const parseInput = (rawInput: lib.RawInput): lib.Input => {
     if (!process.env.GITHUB_REF_NAME) {
       throw new Error("pull request number is required");
     }
-    rawInput.pullRequestNumber = path.basename(process.env.GITHUB_REF_NAME).replace(/^pr-(\d+).*$/, "$1");
+    rawInput.pullRequestNumber = path
+      .basename(process.env.GITHUB_REF_NAME)
+      .replace(/^pr-(\d+).*$/, "$1");
   }
   const trustedApps = new Set<string>();
   for (const app of rawInput.trustedApps.filter((a) => !a.startsWith("#"))) {
