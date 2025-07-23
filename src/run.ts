@@ -1,4 +1,6 @@
 import * as core from "@actions/core";
+import * as path from "path";
+import { context } from "@actions/github";
 import * as github from "./github";
 import * as lib from "./lib";
 import * as type from "./type";
@@ -18,6 +20,15 @@ export const main = async () => {
 };
 
 const parseInput = (rawInput: lib.RawInput): lib.Input => {
+  if (rawInput.pullRequestNumber === "") {
+    if (context.eventName !== "merge_group") {
+      throw new Error("pull request number is required");
+    }
+    if (!process.env.GITHUB_REF_NAME) {
+      throw new Error("pull request number is required");
+    }
+    rawInput.pullRequestNumber = path.basename(process.env.GITHUB_REF_NAME).replace(/^pr-(\d+).*$/, "$1");
+  }
   const trustedApps = new Set<string>();
   for (const app of rawInput.trustedApps.filter((a) => !a.startsWith("#"))) {
     if (app.endsWith("[bot]")) {
