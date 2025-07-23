@@ -91,7 +91,7 @@ const run = async (input: lib.Input) => {
       pr.repository.pullRequest.commits.nodes.concat(
         await github.listCommits(
           input,
-          pr.repository.pullRequest.commits.pageInfo.endCursor,
+          pr.repository.pullRequest.commits.pageInfo.endCursor || "",
         ),
       );
   }
@@ -100,7 +100,7 @@ const run = async (input: lib.Input) => {
       pr.repository.pullRequest.reviews.nodes.concat(
         await github.listReviews(
           input,
-          pr.repository.pullRequest.reviews.pageInfo.endCursor,
+          pr.repository.pullRequest.reviews.pageInfo.endCursor || "",
         ),
       );
   }
