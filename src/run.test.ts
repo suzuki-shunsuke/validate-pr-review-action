@@ -181,7 +181,8 @@ test("analyze - at least one approval is required", () => {
     approvalsFromCommitters: [],
     twoApprovalsAreRequired: false,
     message: "At least one approval is required",
-    valid: false,
+    valid: true,
+    requiresAction: true,
   });
 });
 
