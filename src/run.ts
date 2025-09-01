@@ -107,6 +107,15 @@ const run = async (input: lib.Input) => {
   core.info(JSON.stringify(pr, null, 2));
   const result = analyze(pr, input);
   core.info(JSON.stringify(result, null, 2));
+
+  if (result.requiresAction) {
+    await github.updateCheckRunToActionRequired(
+      input,
+      result.message ?? "Action required",
+    );
+    return;
+  }
+
   if (!result.valid) {
     core.setFailed(
       `${result.message ?? "Validation failed"}: https://github.com/suzuki-shunsuke/validate-pr-review-action/blob/main/README.md`,
@@ -124,6 +133,7 @@ type Result = {
   twoApprovalsAreRequired: boolean;
   valid: boolean;
   message?: string;
+  requiresAction?: boolean;
 };
 
 type Commit = {
@@ -177,7 +187,7 @@ export const analyze = (pr: type.PullRequest, input: lib.Input): Result => {
     return result;
   }
   if (numOfApprovals === 0) {
-    result.valid = false;
+    result.requiresAction = true;
     result.message = "At least one approval is required";
   }
 
