@@ -309,7 +309,7 @@ test("analyze - trusted_machine_users", () => {
   });
 });
 
-test("analyze - pr author is an untrusted machine user (2 approvals)", () => {
+test("analyze - pr author is an untrusted machine user (2 approvals by unique user)", () => {
   expect(
     run.analyze(
       {
@@ -339,6 +339,40 @@ test("analyze - pr author is an untrusted machine user (2 approvals)", () => {
     approvalsFromCommitters: [],
     twoApprovalsAreRequired: true,
     valid: true,
+  });
+});
+
+test("analyze - pr author is an untrusted machine user (2 approvals by same user)", () => {
+  expect(
+    run.analyze(
+      {
+        repository: {
+          pullRequest: {
+            headRefOid: latestSHA,
+            author: suzukiBot, // untrusted machine user
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([
+              latestApprovalFromSuzuki,
+              latestApprovalFromSuzuki,
+            ]),
+          },
+        },
+      },
+      getInput(["/apps/renovate", "/apps/dependabot"], ["suzuki-shunsuke-bot"]),
+    ),
+  ).toStrictEqual({
+    headSHA: latestSHA,
+    author: {
+      login: "suzuki-shunsuke-bot",
+      untrusted: true,
+    },
+    trustedApprovals: [trustedApprovalFromSuzuki],
+    ignoredApprovals: [],
+    untrustedCommits: [],
+    approvalsFromCommitters: [],
+    twoApprovalsAreRequired: true,
+    valid: false,
+    message: "At least two approvals are required",
   });
 });
 

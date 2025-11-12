@@ -343,7 +343,11 @@ const isApp = (user: type.User): boolean =>
   user.resourcePath.startsWith("/apps/");
 
 const extractApproved = (reviews: type.Review[]): type.Review[] =>
-  reviews.filter((review) => review.state === "APPROVED");
+  reviews.filter(
+    (review, index, self) =>
+      self.findIndex((e) => review.author.login === e.author.login) === index &&
+      review.state === "APPROVED",
+  );
 
 const excludeOldReviews = (
   reviews: type.Review[],
