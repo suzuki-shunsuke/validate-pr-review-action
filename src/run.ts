@@ -306,9 +306,9 @@ export const analyzeReviews = (
     });
   }
   return {
-    trusted: uniqueApprovals(approvals.trusted),
-    ignored: uniqueApprovals(approvals.ignored),
-    approvalsFromCommitters: uniqueApprovals(approvals.approvalsFromCommitters),
+    trusted: approvals.trusted,
+    ignored: approvals.ignored,
+    approvalsFromCommitters: approvals.approvalsFromCommitters,
   };
 };
 
@@ -347,7 +347,11 @@ const isApp = (user: type.User): boolean =>
   user.resourcePath.startsWith("/apps/");
 
 const extractApproved = (reviews: type.Review[]): type.Review[] =>
-  reviews.filter((review) => review.state === "APPROVED");
+  reviews.filter(
+    (review, index, self) =>
+      self.findIndex((e) => review.author.login === e.author.login) === index &&
+      review.state === "APPROVED",
+  );
 
 const excludeOldReviews = (
   reviews: type.Review[],
@@ -372,9 +376,3 @@ const checkIfUserRequiresTwoApprovals = (
   // Require two approvals for PRs created by untrusted machine users
   return matchUntrustedMachineUser(user.login, input);
 };
-
-const uniqueApprovals = (approvals: Approval[]): Approval[] =>
-  approvals.filter(
-    (approval, index, self) =>
-      self.findIndex((e) => approval.user.login === e.user.login) === index,
-  );
