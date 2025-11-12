@@ -305,11 +305,7 @@ export const analyzeReviews = (
       },
     });
   }
-  return {
-    trusted: approvals.trusted,
-    ignored: approvals.ignored,
-    approvalsFromCommitters: approvals.approvalsFromCommitters,
-  };
+  return approvals;
 };
 
 const validateCommitter = (
