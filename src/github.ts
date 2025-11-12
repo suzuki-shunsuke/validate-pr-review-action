@@ -175,3 +175,43 @@ export const listReviews = async (
   const pr = QueryReviews.parse(result);
   return pr.repository.pullRequest.reviews.nodes;
 };
+
+export const updateCheckRunToActionRequired = async (
+  input: lib.Input,
+  message: string,
+): Promise<void> => {
+  const octokit = github.getOctokit(input.githubToken);
+
+  const runId = process.env.GITHUB_RUN_ID;
+  if (!runId) {
+    return;
+  }
+
+  try {
+    const checkRuns = await octokit.rest.checks.listForRef({
+      owner: input.repositoryOwner,
+      repo: input.repositoryName,
+      ref: process.env.GITHUB_SHA || "",
+    });
+
+    const currentCheckRun = checkRuns.data.check_runs.find(
+      (run) => run.external_id === runId || run.name === process.env.GITHUB_JOB,
+    );
+
+    if (currentCheckRun) {
+      await octokit.rest.checks.update({
+        owner: input.repositoryOwner,
+        repo: input.repositoryName,
+        check_run_id: currentCheckRun.id,
+        status: "completed",
+        conclusion: "action_required",
+        output: {
+          title: "Action Required",
+          summary: message,
+        },
+      });
+    }
+  } catch (error) {
+    console.warn("Failed to update check run status:", error);
+  }
+};
