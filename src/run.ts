@@ -306,9 +306,9 @@ export const analyzeReviews = (
     });
   }
   return {
-    trusted: uniqueApproval(approvals.trusted),
-    ignored: uniqueApproval(approvals.ignored),
-    approvalsFromCommitters: uniqueApproval(approvals.approvalsFromCommitters),
+    trusted: uniqueApprovals(approvals.trusted),
+    ignored: uniqueApprovals(approvals.ignored),
+    approvalsFromCommitters: uniqueApprovals(approvals.approvalsFromCommitters),
   };
 };
 
@@ -373,7 +373,7 @@ const checkIfUserRequiresTwoApprovals = (
   return matchUntrustedMachineUser(user.login, input);
 };
 
-const uniqueApproval = (approvals: Approval[]): Approval[] =>
+const uniqueApprovals = (approvals: Approval[]): Approval[] =>
   approvals.filter(
     (approval, index, self) =>
       self.findIndex((e) => approval.user.login === e.user.login) === index,
