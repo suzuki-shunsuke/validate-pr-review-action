@@ -305,7 +305,11 @@ export const analyzeReviews = (
       },
     });
   }
-  return approvals;
+  return {
+    trusted: uniqueApproval(approvals.trusted),
+    ignored: uniqueApproval(approvals.ignored),
+    approvalsFromCommitters: uniqueApproval(approvals.approvalsFromCommitters),
+  };
 };
 
 const validateCommitter = (
@@ -368,3 +372,9 @@ const checkIfUserRequiresTwoApprovals = (
   // Require two approvals for PRs created by untrusted machine users
   return matchUntrustedMachineUser(user.login, input);
 };
+
+const uniqueApproval = (approvals: Approval[]): Approval[] =>
+  approvals.filter(
+    (approval, index, self) =>
+      self.findIndex((e) => approval.user.login === e.user.login) === index,
+  );
