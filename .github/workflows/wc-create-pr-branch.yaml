@@ -36,3 +36,9 @@ jobs:
         with:
           version: pr/${{inputs.pr}}
           is_comment: ${{inputs.is_comment}}
+
+      - uses: ./
+        with:
+          repository_owner: szksh-lab-2
+          repository_name: test-github-action
+          pull_request_number: 206
