@@ -342,12 +342,16 @@ const validateCommitter = (
 const isApp = (user: type.User): boolean =>
   user.resourcePath.startsWith("/apps/");
 
-const extractApproved = (reviews: type.Review[]): type.Review[] =>
-  reviews.filter(
-    (review, index, self) =>
-      self.findIndex((e) => review.author.login === e.author.login) === index &&
-      review.state === "APPROVED",
-  );
+export const extractApproved = (reviews: type.Review[]): type.Review[] => {
+  const approvals = new Map<string, type.Review>();
+  for (const review of reviews) {
+    if (review.state !== "APPROVED") {
+      continue;
+    }
+    approvals.set(review.author.login, review);
+  }
+  return Array.from(approvals.values());
+};
 
 const excludeOldReviews = (
   reviews: type.Review[],

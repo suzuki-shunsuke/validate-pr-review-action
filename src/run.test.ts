@@ -106,8 +106,17 @@ const latestApproval = (user: type.User) => ({
   author: user,
 });
 
+const latestCommented = (user: type.User) => ({
+  state: "COMMENTED",
+  commit: {
+    oid: latestSHA,
+  },
+  author: user,
+});
+
 const latestApprovalFromSuzuki = latestApproval(suzuki);
 const latestApprovalFromSuzuki2 = latestApproval(suzuki2);
+const latestCommentedFromSuzuki = latestCommented(suzuki);
 
 const trustedApproval = (user: string) => ({
   user: {
@@ -140,6 +149,46 @@ test("analyze - normal", () => {
             author: octocat,
             commits: commits([octocatLatestCommit]),
             reviews: reviews([latestApprovalFromSuzuki]),
+          },
+        },
+      },
+      getInput(["/apps/renovate", "/apps/dependabot"], []),
+    ),
+  ).toStrictEqual({
+    headSHA: latestSHA,
+    author: authors.octocat,
+    trustedApprovals: [trustedApprovalFromSuzuki],
+    ignoredApprovals: [],
+    approvalsFromCommitters: [],
+    untrustedCommits: [],
+    twoApprovalsAreRequired: false,
+    valid: true,
+  });
+});
+
+// https://github.com/suzuki-shunsuke/validate-pr-review-action/issues/314
+test("analyze - normal 2", () => {
+  expect(
+    run.analyze(
+      {
+        repository: {
+          pullRequest: {
+            headRefOid: latestSHA,
+            author: octocat,
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([{
+              state: "COMMENTED",
+              commit: {
+                oid: latestSHA,
+              },
+              author: suzuki,
+            }, {
+              state: "APPROVED",
+              commit: {
+                oid: latestSHA,
+              },
+              author: suzuki,
+            }]),
           },
         },
       },
@@ -530,4 +579,50 @@ test("analyzeReviews - normal", () => {
     approvalsFromCommitters: [],
     ignored: [],
   });
+});
+
+test("analyzeReviews - normal 2", () => {
+  expect(
+    run.analyzeReviews(
+      {
+        repository: {
+          pullRequest: {
+            headRefOid: latestSHA,
+            author: octocat,
+            commits: commits([octocatLatestCommit]),
+            reviews: reviews([latestCommentedFromSuzuki, latestApprovalFromSuzuki]),
+          },
+        },
+      },
+      getInput(["/apps/renovate", "/apps/dependabot"], []),
+      new Set(["octocat"]),
+    ),
+  ).toStrictEqual({
+    trusted: [trustedApprovalFromSuzuki],
+    approvalsFromCommitters: [],
+    ignored: [],
+  });
+});
+
+test("extractApproved - normal", () => {
+  expect(
+    run.extractApproved([
+      {
+        author: octocat,
+        commit: octocatLatestCommit,
+        state: "COMMENTED",
+      },
+      {
+        author: octocat,
+        commit: octocatLatestCommit,
+        state: "APPROVED",
+      },
+    ]),
+  ).toStrictEqual([
+    {
+      author: octocat,
+      commit: octocatLatestCommit,
+      state: "APPROVED",
+    }
+  ]);
 });
