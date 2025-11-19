@@ -176,19 +176,22 @@ test("analyze - normal 2", () => {
             headRefOid: latestSHA,
             author: octocat,
             commits: commits([octocatLatestCommit]),
-            reviews: reviews([{
-              state: "COMMENTED",
-              commit: {
-                oid: latestSHA,
+            reviews: reviews([
+              {
+                state: "COMMENTED",
+                commit: {
+                  oid: latestSHA,
+                },
+                author: suzuki,
               },
-              author: suzuki,
-            }, {
-              state: "APPROVED",
-              commit: {
-                oid: latestSHA,
+              {
+                state: "APPROVED",
+                commit: {
+                  oid: latestSHA,
+                },
+                author: suzuki,
               },
-              author: suzuki,
-            }]),
+            ]),
           },
         },
       },
@@ -590,7 +593,10 @@ test("analyzeReviews - normal 2", () => {
             headRefOid: latestSHA,
             author: octocat,
             commits: commits([octocatLatestCommit]),
-            reviews: reviews([latestCommentedFromSuzuki, latestApprovalFromSuzuki]),
+            reviews: reviews([
+              latestCommentedFromSuzuki,
+              latestApprovalFromSuzuki,
+            ]),
           },
         },
       },
@@ -623,6 +629,6 @@ test("extractApproved - normal", () => {
       author: octocat,
       commit: octocatLatestCommit,
       state: "APPROVED",
-    }
+    },
   ]);
 });
