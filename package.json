@@ -6,7 +6,7 @@
     "test": "vitest --run"
   },
   "dependencies": {
-    "@actions/core": "2.0.0",
+    "@actions/core": "2.0.1",
     "@actions/github": "^6.0.0",
     "@octokit/core": "^7.0.0",
     "@octokit/graphql": "^9.0.0",
